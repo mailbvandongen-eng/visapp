@@ -3,9 +3,9 @@ import { useWeatherStore, useSettingsStore } from '../../store'
 
 export function WindIndicator() {
   const current = useWeatherStore(state => state.current)
-  const showWeatherWidget = useSettingsStore(state => state.showWeatherWidget)
+  const showWindIndicator = useSettingsStore(state => state.showWindIndicator)
 
-  if (!showWeatherWidget || !current) return null
+  if (!showWindIndicator || !current) return null
 
   const windSpeed = Math.round(current.windSpeed)
   const windDirection = current.windDirection
@@ -30,7 +30,7 @@ export function WindIndicator() {
 
   return (
     <motion.div
-      className="fixed bottom-28 left-2 z-[700] bg-white/90 backdrop-blur-sm rounded-xl shadow-sm p-2"
+      className="fixed bottom-4 left-2 z-[700] bg-white/90 backdrop-blur-sm rounded-xl shadow-sm p-2"
       initial={{ opacity: 0, scale: 0.8 }}
       animate={{ opacity: 1, scale: 1 }}
     >

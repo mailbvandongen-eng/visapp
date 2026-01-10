@@ -28,7 +28,7 @@ function getWeatherLabel(code: number) {
 export function ForecastSlider() {
   const hourlyForecast = useWeatherStore(state => state.hourlyForecast)
   const getWeatherAtTime = useWeatherStore(state => state.getWeatherAtTime)
-  const showWeatherWidget = useSettingsStore(state => state.showWeatherWidget)
+  const showForecastSlider = useSettingsStore(state => state.showForecastSlider)
 
   const [isExpanded, setIsExpanded] = useState(false)
   const [sliderValue, setSliderValue] = useState(0)
@@ -60,7 +60,7 @@ export function ForecastSlider() {
     return () => clearInterval(interval)
   }, [isPlaying])
 
-  if (!showWeatherWidget || hourlyForecast.length === 0) return null
+  if (!showForecastSlider || hourlyForecast.length === 0) return null
 
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })
@@ -88,7 +88,7 @@ export function ForecastSlider() {
     <>
       {/* Toggle button */}
       <motion.button
-        className="fixed bottom-60 left-2 z-[700] bg-white/90 backdrop-blur-sm rounded-xl shadow-sm p-2 flex items-center gap-2 border-0 outline-none"
+        className="fixed bottom-44 left-2 z-[700] bg-white/90 backdrop-blur-sm rounded-xl shadow-sm p-2 flex items-center gap-2 border-0 outline-none"
         onClick={() => setIsExpanded(true)}
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}

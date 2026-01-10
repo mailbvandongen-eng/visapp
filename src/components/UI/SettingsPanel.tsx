@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { X, Fish, MapPin, Map, Cloud } from 'lucide-react'
+import { X, Fish, MapPin, Map, Cloud, Wind, Waves, Clock } from 'lucide-react'
 import { useUIStore, useSettingsStore } from '../../store'
 
 export function SettingsPanel() {
@@ -16,6 +16,12 @@ export function SettingsPanel() {
   const setDefaultBackground = useSettingsStore(state => state.setDefaultBackground)
   const showWeatherWidget = useSettingsStore(state => state.showWeatherWidget)
   const setShowWeatherWidget = useSettingsStore(state => state.setShowWeatherWidget)
+  const showWindIndicator = useSettingsStore(state => state.showWindIndicator)
+  const setShowWindIndicator = useSettingsStore(state => state.setShowWindIndicator)
+  const showTideWidget = useSettingsStore(state => state.showTideWidget)
+  const setShowTideWidget = useSettingsStore(state => state.setShowTideWidget)
+  const showForecastSlider = useSettingsStore(state => state.showForecastSlider)
+  const setShowForecastSlider = useSettingsStore(state => state.setShowForecastSlider)
 
   if (!settingsPanelOpen) return null
 
@@ -105,14 +111,38 @@ export function SettingsPanel() {
 
           {/* Weer sectie */}
           <div className="space-y-3 pt-2 border-t border-gray-100">
-            <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide">Weer</h3>
+            <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide">Weer & Water</h3>
 
             <ToggleItem
               icon={<Cloud size={18} className="text-blue-400" />}
               label="Weer widget"
-              description="Toon temperatuur, wind en luchtdruk"
+              description="Temperatuur, wind, luchtdruk en solunar"
               checked={showWeatherWidget}
               onChange={setShowWeatherWidget}
+            />
+
+            <ToggleItem
+              icon={<Wind size={18} className="text-cyan-500" />}
+              label="Wind kompas"
+              description="Windrichting en snelheid indicator"
+              checked={showWindIndicator}
+              onChange={setShowWindIndicator}
+            />
+
+            <ToggleItem
+              icon={<Waves size={18} className="text-blue-500" />}
+              label="Getijden"
+              description="Hoog- en laagwater tijden"
+              checked={showTideWidget}
+              onChange={setShowTideWidget}
+            />
+
+            <ToggleItem
+              icon={<Clock size={18} className="text-purple-500" />}
+              label="Weersvoorspelling"
+              description="Tijdslider met 72 uur forecast"
+              checked={showForecastSlider}
+              onChange={setShowForecastSlider}
             />
           </div>
         </div>

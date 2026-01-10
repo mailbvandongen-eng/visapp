@@ -13,6 +13,9 @@ interface SettingsState {
   showCatches: boolean
   showFavoriteSpots: boolean
   showWeatherWidget: boolean
+  showWindIndicator: boolean
+  showTideWidget: boolean
+  showForecastSlider: boolean
 
   setDefaultBackground: (bg: DefaultBackground) => void
   setShowScaleBar: (value: boolean) => void
@@ -23,6 +26,9 @@ interface SettingsState {
   setShowCatches: (value: boolean) => void
   setShowFavoriteSpots: (value: boolean) => void
   setShowWeatherWidget: (value: boolean) => void
+  setShowWindIndicator: (value: boolean) => void
+  setShowTideWidget: (value: boolean) => void
+  setShowForecastSlider: (value: boolean) => void
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -37,6 +43,9 @@ export const useSettingsStore = create<SettingsState>()(
       showCatches: true,
       showFavoriteSpots: true,
       showWeatherWidget: true,
+      showWindIndicator: true,
+      showTideWidget: true,
+      showForecastSlider: true,
 
       setDefaultBackground: (defaultBackground) => set({ defaultBackground }),
       setShowScaleBar: (showScaleBar) => set({ showScaleBar }),
@@ -46,7 +55,10 @@ export const useSettingsStore = create<SettingsState>()(
       setShowCatchButton: (showCatchButton) => set({ showCatchButton }),
       setShowCatches: (showCatches) => set({ showCatches }),
       setShowFavoriteSpots: (showFavoriteSpots) => set({ showFavoriteSpots }),
-      setShowWeatherWidget: (showWeatherWidget) => set({ showWeatherWidget })
+      setShowWeatherWidget: (showWeatherWidget) => set({ showWeatherWidget }),
+      setShowWindIndicator: (showWindIndicator) => set({ showWindIndicator }),
+      setShowTideWidget: (showTideWidget) => set({ showTideWidget }),
+      setShowForecastSlider: (showForecastSlider) => set({ showForecastSlider })
     }),
     {
       name: 'visapp-settings'
