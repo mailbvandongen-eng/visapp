@@ -16,9 +16,9 @@ export function ResetButton() {
     // Stop GPS tracking
     stopTracking()
 
-    // Reset to CartoDB base layer
-    setLayerVisibility('CartoDB (licht)', true)
-    setLayerVisibility('OpenStreetMap', false)
+    // Reset to OpenStreetMap base layer
+    setLayerVisibility('CartoDB (licht)', false)
+    setLayerVisibility('OpenStreetMap', true)
     setLayerVisibility('Luchtfoto', false)
 
     // Turn off all overlay layers

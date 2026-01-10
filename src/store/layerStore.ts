@@ -23,8 +23,8 @@ export const useLayerStore = create<LayerState>()(
   immer((set, get) => ({
     // Initial visibility - vis layers
     visible: {
-      'CartoDB (licht)': true,
-      'OpenStreetMap': false,
+      'CartoDB (licht)': false,
+      'OpenStreetMap': true,
       'Luchtfoto': false,
       'Aanlegsteigers': false,
       'Boothellingen': false,

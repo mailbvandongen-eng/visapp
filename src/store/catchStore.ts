@@ -8,6 +8,14 @@ export interface WeatherSnapshot {
   pressure: number
 }
 
+export interface PhotoData {
+  id: string
+  thumbnailUrl?: string      // Firebase Storage URL (when uploaded)
+  thumbnailBase64?: string   // Local base64 fallback (offline/before upload)
+  createdAt: string
+  pendingUpload?: boolean    // True when offline, needs sync
+}
+
 export interface Catch {
   id: string
   location: {
@@ -18,7 +26,7 @@ export interface Catch {
   species: string
   weight?: number // gram
   length?: number // cm
-  photoUrl?: string
+  photos?: PhotoData[]
   method: string
   bait?: string
   notes?: string

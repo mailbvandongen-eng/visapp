@@ -3,6 +3,8 @@ import { motion } from 'framer-motion'
 import { X, Fish, MapPin, Scale, Ruler } from 'lucide-react'
 import { useCatchStore, useWeatherStore, useGPSStore } from '../../store'
 import { FISH_SPECIES, FISHING_METHODS, BAIT_TYPES } from '../../data/fishSpecies'
+import { PhotoCapture } from './PhotoCapture'
+import type { PhotoData } from '../../store/catchStore'
 
 interface AddCatchFormProps {
   onClose: () => void
@@ -22,6 +24,15 @@ export function AddCatchForm({ onClose, initialLocation }: AddCatchFormProps) {
   const [method, setMethod] = useState('')
   const [bait, setBait] = useState('')
   const [notes, setNotes] = useState('')
+  const [photos, setPhotos] = useState<PhotoData[]>([])
+
+  const handleAddPhoto = (photo: PhotoData) => {
+    setPhotos(prev => [...prev, photo])
+  }
+
+  const handleRemovePhoto = (photoId: string) => {
+    setPhotos(prev => prev.filter(p => p.id !== photoId))
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -36,6 +47,7 @@ export function AddCatchForm({ onClose, initialLocation }: AddCatchFormProps) {
       species,
       weight: weight ? parseInt(weight) : undefined,
       length: length ? parseInt(length) : undefined,
+      photos: photos.length > 0 ? photos : undefined,
       method: method || 'Anders',
       bait: bait || undefined,
       notes: notes || undefined,
@@ -182,6 +194,13 @@ export function AddCatchForm({ onClose, initialLocation }: AddCatchFormProps) {
               rows={2}
             />
           </div>
+
+          {/* Photos */}
+          <PhotoCapture
+            photos={photos}
+            onAddPhoto={handleAddPhoto}
+            onRemovePhoto={handleRemovePhoto}
+          />
 
           {/* Submit */}
           <button

@@ -12,6 +12,7 @@ interface SettingsState {
   showCatchButton: boolean
   showCatches: boolean
   showFavoriteSpots: boolean
+  showWeatherWidget: boolean
 
   setDefaultBackground: (bg: DefaultBackground) => void
   setShowScaleBar: (value: boolean) => void
@@ -21,12 +22,13 @@ interface SettingsState {
   setShowCatchButton: (value: boolean) => void
   setShowCatches: (value: boolean) => void
   setShowFavoriteSpots: (value: boolean) => void
+  setShowWeatherWidget: (value: boolean) => void
 }
 
 export const useSettingsStore = create<SettingsState>()(
   persist(
     (set) => ({
-      defaultBackground: 'CartoDB (licht)',
+      defaultBackground: 'OpenStreetMap',
       showScaleBar: true,
       gpsAutoStart: false,
       showAccuracyCircle: true,
@@ -34,6 +36,7 @@ export const useSettingsStore = create<SettingsState>()(
       showCatchButton: true,
       showCatches: true,
       showFavoriteSpots: true,
+      showWeatherWidget: true,
 
       setDefaultBackground: (defaultBackground) => set({ defaultBackground }),
       setShowScaleBar: (showScaleBar) => set({ showScaleBar }),
@@ -42,7 +45,8 @@ export const useSettingsStore = create<SettingsState>()(
       setHapticFeedback: (hapticFeedback) => set({ hapticFeedback }),
       setShowCatchButton: (showCatchButton) => set({ showCatchButton }),
       setShowCatches: (showCatches) => set({ showCatches }),
-      setShowFavoriteSpots: (showFavoriteSpots) => set({ showFavoriteSpots })
+      setShowFavoriteSpots: (showFavoriteSpots) => set({ showFavoriteSpots }),
+      setShowWeatherWidget: (showWeatherWidget) => set({ showWeatherWidget })
     }),
     {
       name: 'visapp-settings'

@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { X, Fish, MapPin, Map } from 'lucide-react'
+import { X, Fish, MapPin, Map, Cloud } from 'lucide-react'
 import { useUIStore, useSettingsStore } from '../../store'
 
 export function SettingsPanel() {
@@ -14,6 +14,8 @@ export function SettingsPanel() {
   const setShowFavoriteSpots = useSettingsStore(state => state.setShowFavoriteSpots)
   const defaultBackground = useSettingsStore(state => state.defaultBackground)
   const setDefaultBackground = useSettingsStore(state => state.setDefaultBackground)
+  const showWeatherWidget = useSettingsStore(state => state.showWeatherWidget)
+  const setShowWeatherWidget = useSettingsStore(state => state.setShowWeatherWidget)
 
   if (!settingsPanelOpen) return null
 
@@ -100,6 +102,19 @@ export function SettingsPanel() {
                 </select>
               </div>
             </div>
+          </div>
+
+          {/* Weer sectie */}
+          <div className="space-y-3 pt-2 border-t border-gray-100">
+            <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide">Weer</h3>
+
+            <ToggleItem
+              icon={<Cloud size={18} className="text-blue-400" />}
+              label="Weer widget"
+              description="Toon temperatuur, wind en luchtdruk"
+              checked={showWeatherWidget}
+              onChange={setShowWeatherWidget}
+            />
           </div>
         </div>
 

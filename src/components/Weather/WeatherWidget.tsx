@@ -1,12 +1,23 @@
 import { useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Cloud, Wind, Thermometer, Fish } from 'lucide-react'
-import { useWeatherStore, useGPSStore } from '../../store'
+import { useWeatherStore, useGPSStore, useSettingsStore } from '../../store'
+
+// Default location: center of Netherlands
+const DEFAULT_LOCATION = { lat: 52.1326, lng: 5.2913 }
 
 export function WeatherWidget() {
   const { current, loading, fetchWeather, getFishingCondition } = useWeatherStore()
   const position = useGPSStore(state => state.position)
+  const showWeatherWidget = useSettingsStore(state => state.showWeatherWidget)
 
+  // Fetch weather on mount (use GPS position if available, otherwise default)
+  useEffect(() => {
+    const loc = position || DEFAULT_LOCATION
+    fetchWeather(loc.lat, loc.lng)
+  }, []) // Only on mount
+
+  // Update weather when GPS position changes
   useEffect(() => {
     if (position) {
       fetchWeather(position.lat, position.lng)
@@ -15,13 +26,17 @@ export function WeatherWidget() {
 
   // Refresh weather every 10 minutes
   useEffect(() => {
-    if (!position) return
+    const loc = position || DEFAULT_LOCATION
     const interval = setInterval(() => {
-      fetchWeather(position.lat, position.lng)
+      fetchWeather(loc.lat, loc.lng)
     }, 10 * 60 * 1000)
     return () => clearInterval(interval)
   }, [position, fetchWeather])
 
+  // Don't show if disabled in settings
+  if (!showWeatherWidget) return null
+
+  // Show loading or no data state
   if (!current && !loading) return null
 
   const condition = getFishingCondition()
