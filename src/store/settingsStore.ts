@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
-export type DefaultBackground = 'CartoDB (licht)' | 'Luchtfoto' | 'OpenStreetMap'
+export type DefaultBackground = 'OpenStreetMap' | 'Luchtfoto'
 
 interface SettingsState {
   defaultBackground: DefaultBackground

@@ -96,7 +96,6 @@ export function SettingsPanel() {
                   onChange={(e) => setDefaultBackground(e.target.value as any)}
                   className="mt-1 w-full px-2 py-1 text-sm border border-gray-200 rounded-lg bg-white outline-none focus:ring-2 focus:ring-blue-400"
                 >
-                  <option value="CartoDB (licht)">Kaart (licht)</option>
                   <option value="OpenStreetMap">OpenStreetMap</option>
                   <option value="Luchtfoto">Satelliet</option>
                 </select>

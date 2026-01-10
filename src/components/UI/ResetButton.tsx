@@ -17,9 +17,9 @@ export function ResetButton() {
     stopTracking()
 
     // Reset to OpenStreetMap base layer
-    setLayerVisibility('CartoDB (licht)', false)
     setLayerVisibility('OpenStreetMap', true)
     setLayerVisibility('Luchtfoto', false)
+    setLayerVisibility('Labels Overlay', false)
 
     // Turn off all overlay layers
     setLayerVisibility('Aanlegsteigers', false)

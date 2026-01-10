@@ -6,7 +6,7 @@ import { useMap } from '../../hooks/useMap'
 import { useLayerStore, useMapStore, useSettingsStore, useGPSStore } from '../../store'
 import { getImmediateLoadLayers } from '../../layers/layerRegistry'
 
-const BASE_LAYERS = ['CartoDB (licht)', 'OpenStreetMap', 'Luchtfoto']
+const BASE_LAYERS = ['OpenStreetMap', 'Luchtfoto']
 
 export function MapContainer() {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -27,17 +27,8 @@ export function MapContainer() {
     // Base layers
     const osmLayer = new TileLayer({
       properties: { title: 'OpenStreetMap', type: 'base' },
-      visible: false,
-      source: new OSM()
-    })
-
-    const cartoDBLayer = new TileLayer({
-      properties: { title: 'CartoDB (licht)', type: 'base' },
       visible: true,
-      source: new XYZ({
-        url: 'https://{a-d}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
-        attributions: '© OpenStreetMap contributors © CARTO'
-      })
+      source: new OSM()
     })
 
     const satelliteLayer = new TileLayer({
@@ -50,13 +41,23 @@ export function MapContainer() {
       })
     })
 
+    // Labels overlay for satellite view
+    const labelsOverlay = new TileLayer({
+      properties: { title: 'Labels Overlay', type: 'overlay' },
+      visible: false,
+      source: new XYZ({
+        url: 'https://{a-d}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}.png',
+        attributions: '© OpenStreetMap contributors © CARTO'
+      })
+    })
+
     map.addLayer(osmLayer)
-    map.addLayer(cartoDBLayer)
     map.addLayer(satelliteLayer)
+    map.addLayer(labelsOverlay)
 
     registerLayer('OpenStreetMap', osmLayer)
-    registerLayer('CartoDB (licht)', cartoDBLayer)
     registerLayer('Luchtfoto', satelliteLayer)
+    registerLayer('Labels Overlay', labelsOverlay)
 
     map.updateSize()
 
@@ -95,7 +96,7 @@ export function MapContainer() {
     if (!map || initialBgApplied.current) return
 
     const timer = setTimeout(() => {
-      const bgToApply = defaultBackground || 'CartoDB (licht)'
+      const bgToApply = defaultBackground || 'OpenStreetMap'
       BASE_LAYERS.forEach(layer => setLayerVisibility(layer, false))
       setLayerVisibility(bgToApply, true)
       initialBgApplied.current = true

@@ -23,9 +23,9 @@ export const useLayerStore = create<LayerState>()(
   immer((set, get) => ({
     // Initial visibility - vis layers
     visible: {
-      'CartoDB (licht)': false,
       'OpenStreetMap': true,
       'Luchtfoto': false,
+      'Labels Overlay': false,
       'Aanlegsteigers': false,
       'Boothellingen': false,
       'Dieptekaart': false,
