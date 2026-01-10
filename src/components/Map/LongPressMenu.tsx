@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, MapPin, ExternalLink, Fish, PersonStanding, Star } from 'lucide-react'
+import { X, MapPin, ExternalLink, Fish, PersonStanding } from 'lucide-react'
 import { toLonLat } from 'ol/proj'
 import { useMapStore, useUIStore } from '../../store'
 
@@ -12,7 +12,6 @@ interface LongPressLocation {
 export function LongPressMenu() {
   const map = useMapStore(state => state.map)
   const openCatchForm = useUIStore(state => state.openCatchForm)
-  const openSpotForm = useUIStore(state => state.openSpotForm)
 
   const [menuLocation, setMenuLocation] = useState<LongPressLocation | null>(null)
   const [visible, setVisible] = useState(false)
@@ -206,13 +205,6 @@ export function LongPressMenu() {
     forceClose()
   }
 
-  const handleAddSpot = () => {
-    if (!menuLocation) return
-    const [lng, lat] = menuLocation.coordinate
-    openSpotForm({ lat, lng })
-    forceClose()
-  }
-
   const handleOpenGoogleMaps = () => {
     if (!menuLocation) return
     const [lng, lat] = menuLocation.coordinate
@@ -249,19 +241,19 @@ export function LongPressMenu() {
 
           {/* Context Menu */}
           <motion.div
-            className="fixed z-[1601] bg-white rounded-xl shadow-lg overflow-hidden min-w-[220px] border-0 outline-none"
+            className="fixed z-[1601] bg-white rounded-xl shadow-md overflow-hidden min-w-[200px] border-0 outline-none"
             style={{
-              left: Math.min(menuLocation.pixel[0], window.innerWidth - 240),
-              top: Math.min(menuLocation.pixel[1], window.innerHeight - 280)
+              left: Math.min(menuLocation.pixel[0], window.innerWidth - 220),
+              top: Math.min(menuLocation.pixel[1], window.innerHeight - 240)
             }}
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
             transition={{ duration: 0.15 }}
           >
-            {/* Header with coordinates */}
-            <div className="px-4 py-3 bg-gradient-to-r from-blue-500 to-blue-600">
-              <div className="flex items-center gap-2 text-white">
+            {/* Header with coordinates - white bg, blue text */}
+            <div className="px-4 py-3 bg-white border-b border-gray-100">
+              <div className="flex items-center gap-2 text-blue-600">
                 <MapPin size={16} />
                 <span className="text-xs font-mono">
                   {formatCoordinate(menuLocation.coordinate)}
@@ -274,19 +266,10 @@ export function LongPressMenu() {
               {/* Add catch */}
               <button
                 onClick={handleAddCatch}
-                className="w-full px-4 py-3 flex items-center gap-3 transition-colors hover:bg-green-50 text-gray-700 bg-white border-0 outline-none"
-              >
-                <Fish size={20} className="text-green-500" />
-                <span className="font-medium">Vangst toevoegen</span>
-              </button>
-
-              {/* Add spot/marker */}
-              <button
-                onClick={handleAddSpot}
                 className="w-full px-4 py-3 flex items-center gap-3 transition-colors hover:bg-orange-50 text-gray-700 bg-white border-0 outline-none"
               >
-                <Star size={20} className="text-orange-500" />
-                <span className="font-medium">Locatie vastleggen</span>
+                <Fish size={20} className="text-orange-500" />
+                <span className="font-medium">Vangst toevoegen</span>
               </button>
 
               {/* Open Street View */}
@@ -309,10 +292,10 @@ export function LongPressMenu() {
             </div>
 
             {/* Cancel button */}
-            <div className="bg-gray-50 border-t border-gray-100">
+            <div className="bg-white">
               <button
                 onClick={forceClose}
-                className="w-full px-4 py-3 flex items-center justify-center gap-2 text-gray-500 hover:bg-gray-100 transition-colors bg-transparent border-0 outline-none"
+                className="w-full px-4 py-3 flex items-center justify-center gap-2 text-gray-500 hover:bg-blue-50 transition-colors bg-white border-0 outline-none"
               >
                 <X size={18} />
                 <span>Annuleren</span>

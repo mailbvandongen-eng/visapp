@@ -24,7 +24,9 @@
       "Bash(git remote set-url:*)",
       "Bash(git branch:*)",
       "Bash(git push:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(npm version:*)"
     ]
   }
 }
