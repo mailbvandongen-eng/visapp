@@ -1,5 +1,8 @@
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
+import type { PhotoData } from './catchStore'
+
+export type LocationSource = 'gps' | 'map' | 'photo'
 
 interface UIState {
   // Panel states
@@ -10,6 +13,8 @@ interface UIState {
   // Catch form state
   catchFormOpen: boolean
   catchFormLocation: { lat: number; lng: number } | null
+  catchFormLocationSource: LocationSource | null
+  catchFormInitialPhotos: PhotoData[]
   catchDashboardOpen: boolean
 
   // Spots
@@ -31,7 +36,11 @@ interface UIState {
   toggleCategory: (category: string) => void
 
   // Catch actions
-  openCatchForm: (location?: { lat: number; lng: number }) => void
+  openCatchForm: (options?: {
+    location?: { lat: number; lng: number }
+    locationSource?: LocationSource
+    photos?: PhotoData[]
+  }) => void
   closeCatchForm: () => void
   toggleCatchDashboard: () => void
 
@@ -51,6 +60,8 @@ export const useUIStore = create<UIState>()(
     infoPanelOpen: false,
     catchFormOpen: false,
     catchFormLocation: null,
+    catchFormLocationSource: null,
+    catchFormInitialPhotos: [],
     catchDashboardOpen: false,
     spotFormOpen: false,
     spotFormLocation: null,
@@ -102,10 +113,12 @@ export const useUIStore = create<UIState>()(
       })
     },
 
-    openCatchForm: (location) => {
+    openCatchForm: (options) => {
       set(state => {
         state.catchFormOpen = true
-        state.catchFormLocation = location || null
+        state.catchFormLocation = options?.location || null
+        state.catchFormLocationSource = options?.locationSource || null
+        state.catchFormInitialPhotos = options?.photos || []
       })
     },
 
@@ -113,6 +126,8 @@ export const useUIStore = create<UIState>()(
       set(state => {
         state.catchFormOpen = false
         state.catchFormLocation = null
+        state.catchFormLocationSource = null
+        state.catchFormInitialPhotos = []
       })
     },
 

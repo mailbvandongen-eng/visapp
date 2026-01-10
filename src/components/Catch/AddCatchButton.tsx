@@ -6,6 +6,8 @@ import { AddCatchForm } from './AddCatchForm'
 export function AddCatchButton() {
   const catchFormOpen = useUIStore(state => state.catchFormOpen)
   const catchFormLocation = useUIStore(state => state.catchFormLocation)
+  const catchFormLocationSource = useUIStore(state => state.catchFormLocationSource)
+  const catchFormInitialPhotos = useUIStore(state => state.catchFormInitialPhotos)
   const openCatchForm = useUIStore(state => state.openCatchForm)
   const closeCatchForm = useUIStore(state => state.closeCatchForm)
   const position = useGPSStore(state => state.position)
@@ -13,7 +15,7 @@ export function AddCatchButton() {
 
   const handleClick = () => {
     if (position) {
-      openCatchForm({ lat: position.lat, lng: position.lng })
+      openCatchForm({ location: { lat: position.lat, lng: position.lng }, locationSource: 'gps' })
     } else {
       openCatchForm()
     }
@@ -40,6 +42,8 @@ export function AddCatchButton() {
           <AddCatchForm
             onClose={closeCatchForm}
             initialLocation={catchFormLocation || undefined}
+            initialLocationSource={catchFormLocationSource || undefined}
+            initialPhotos={catchFormInitialPhotos}
           />
         )}
       </AnimatePresence>

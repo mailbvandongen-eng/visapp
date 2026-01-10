@@ -1,8 +1,11 @@
 import { useEffect, useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, MapPin, ExternalLink, Fish, PersonStanding } from 'lucide-react'
+import { X, MapPin, ExternalLink, Fish, PersonStanding, Camera } from 'lucide-react'
 import { toLonLat } from 'ol/proj'
 import { useMapStore, useUIStore } from '../../store'
+import { extractGPSFromPhoto } from '../../lib/exifUtils'
+import { processImageForUpload, generatePhotoId } from '../../lib/imageUtils'
+import type { PhotoData } from '../../store/catchStore'
 
 interface LongPressLocation {
   pixel: [number, number]
@@ -198,10 +201,60 @@ export function LongPressMenu() {
     setCanClose(false)
   }
 
+  const cameraInputRef = useRef<HTMLInputElement>(null)
+
   const handleAddCatch = () => {
     if (!menuLocation) return
     const [lng, lat] = menuLocation.coordinate
-    openCatchForm({ lat, lng })
+    openCatchForm({ location: { lat, lng }, locationSource: 'map' })
+    forceClose()
+  }
+
+  const handleTakePhoto = () => {
+    cameraInputRef.current?.click()
+  }
+
+  const handlePhotoCapture = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !menuLocation) return
+
+    try {
+      // Try to extract GPS from photo
+      const gpsFromPhoto = await extractGPSFromPhoto(file)
+
+      // Process the image for storage
+      const { thumbnailBase64 } = await processImageForUpload(file)
+      const photo: PhotoData = {
+        id: generatePhotoId(),
+        thumbnailBase64,
+        createdAt: new Date().toISOString(),
+        pendingUpload: true
+      }
+
+      // Use EXIF location if available, otherwise use long press location
+      if (gpsFromPhoto) {
+        openCatchForm({
+          location: gpsFromPhoto,
+          locationSource: 'photo',
+          photos: [photo]
+        })
+      } else {
+        const [lng, lat] = menuLocation.coordinate
+        openCatchForm({
+          location: { lat, lng },
+          locationSource: 'map',
+          photos: [photo]
+        })
+      }
+    } catch (error) {
+      console.error('Failed to process photo:', error)
+      // Fallback to just opening with map location
+      const [lng, lat] = menuLocation.coordinate
+      openCatchForm({ location: { lat, lng }, locationSource: 'map' })
+    }
+
+    // Reset input
+    e.target.value = ''
     forceClose()
   }
 
@@ -263,6 +316,15 @@ export function LongPressMenu() {
 
             {/* Menu items */}
             <div className="bg-white">
+              {/* Take photo and add catch */}
+              <button
+                onClick={handleTakePhoto}
+                className="w-full px-4 py-3 flex items-center gap-3 transition-colors hover:bg-green-50 text-gray-700 bg-white border-0 outline-none"
+              >
+                <Camera size={20} className="text-green-500" />
+                <span className="font-medium">Maak foto</span>
+              </button>
+
               {/* Add catch */}
               <button
                 onClick={handleAddCatch}
@@ -290,6 +352,16 @@ export function LongPressMenu() {
                 <span className="font-medium">Google Maps</span>
               </button>
             </div>
+
+            {/* Hidden camera input */}
+            <input
+              ref={cameraInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              onChange={handlePhotoCapture}
+              className="hidden"
+            />
 
             {/* Cancel button */}
             <div className="bg-white">

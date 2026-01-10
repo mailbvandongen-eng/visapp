@@ -37,7 +37,7 @@ export function InfoButton() {
           >
             {/* Header - blue bg, white text */}
             <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-blue-500 to-blue-600">
-              <span className="font-medium text-white">VisApp NL v1.2.1</span>
+              <span className="font-medium text-white">VisApp NL v1.2.2</span>
               <button
                 onClick={toggleInfoPanel}
                 className="p-1 rounded bg-blue-400/50 hover:bg-blue-400 transition-colors border-0 outline-none"
@@ -73,7 +73,7 @@ export function InfoButton() {
               {/* Version Footer */}
               <section className="pt-2 border-t border-gray-200 space-y-2">
                 <p className="text-xs text-gray-400 text-center">
-                  VisApp NL v1.2.1 - Voor jou en je vismaat
+                  VisApp NL v1.2.2 - Voor jou en je vismaat
                 </p>
               </section>
             </div>

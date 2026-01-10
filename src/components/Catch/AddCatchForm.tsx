@@ -1,22 +1,33 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { X, Fish, MapPin, Scale, Ruler } from 'lucide-react'
+import { X, Fish, MapPin, Scale, Ruler, Navigation, Camera, Map } from 'lucide-react'
 import { useCatchStore, useWeatherStore, useGPSStore } from '../../store'
 import { FISH_SPECIES, FISHING_METHODS, BAIT_TYPES } from '../../data/fishSpecies'
 import { PhotoCapture } from './PhotoCapture'
+import { extractGPSFromPhoto } from '../../lib/exifUtils'
+import { processImageForUpload, generatePhotoId } from '../../lib/imageUtils'
 import type { PhotoData } from '../../store/catchStore'
+import type { LocationSource } from '../../store/uiStore'
 
 interface AddCatchFormProps {
   onClose: () => void
   initialLocation?: { lat: number; lng: number }
+  initialLocationSource?: LocationSource
+  initialPhotos?: PhotoData[]
 }
 
-export function AddCatchForm({ onClose, initialLocation }: AddCatchFormProps) {
+export function AddCatchForm({ onClose, initialLocation, initialLocationSource, initialPhotos = [] }: AddCatchFormProps) {
   const addCatch = useCatchStore(state => state.addCatch)
   const current = useWeatherStore(state => state.current)
   const gpsPosition = useGPSStore(state => state.position)
 
-  const location = initialLocation || (gpsPosition ? { lat: gpsPosition.lat, lng: gpsPosition.lng } : null)
+  // Location state
+  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(
+    initialLocation || (gpsPosition ? { lat: gpsPosition.lat, lng: gpsPosition.lng } : null)
+  )
+  const [locationSource, setLocationSource] = useState<LocationSource | null>(
+    initialLocationSource || (gpsPosition ? 'gps' : null)
+  )
 
   const [species, setSpecies] = useState('')
   const [weight, setWeight] = useState('')
@@ -24,9 +35,10 @@ export function AddCatchForm({ onClose, initialLocation }: AddCatchFormProps) {
   const [method, setMethod] = useState('')
   const [bait, setBait] = useState('')
   const [notes, setNotes] = useState('')
-  const [photos, setPhotos] = useState<PhotoData[]>([])
+  const [photos, setPhotos] = useState<PhotoData[]>(initialPhotos)
 
-  const handleAddPhoto = (photo: PhotoData) => {
+  // Handle photo adding with EXIF extraction
+  const handleAddPhoto = async (photo: PhotoData) => {
     setPhotos(prev => [...prev, photo])
   }
 
@@ -34,11 +46,19 @@ export function AddCatchForm({ onClose, initialLocation }: AddCatchFormProps) {
     setPhotos(prev => prev.filter(p => p.id !== photoId))
   }
 
+  // Use current GPS if available and no location set
+  const handleUseGPS = () => {
+    if (gpsPosition) {
+      setLocation({ lat: gpsPosition.lat, lng: gpsPosition.lng })
+      setLocationSource('gps')
+    }
+  }
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
     if (!species || !location) {
-      alert('Selecteer een vissoort en zorg dat GPS actief is')
+      alert('Selecteer een vissoort en zorg dat er een locatie is')
       return
     }
 
@@ -61,6 +81,23 @@ export function AddCatchForm({ onClose, initialLocation }: AddCatchFormProps) {
 
     onClose()
   }
+
+  // Get location source icon and label
+  const getLocationSourceInfo = () => {
+    switch (locationSource) {
+      case 'gps':
+        return { icon: Navigation, label: 'GPS', color: 'text-blue-500' }
+      case 'photo':
+        return { icon: Camera, label: 'Foto EXIF', color: 'text-green-500' }
+      case 'map':
+        return { icon: Map, label: 'Kaart', color: 'text-orange-500' }
+      default:
+        return { icon: MapPin, label: 'Locatie', color: 'text-gray-500' }
+    }
+  }
+
+  const sourceInfo = getLocationSourceInfo()
+  const SourceIcon = sourceInfo.icon
 
   return (
     <motion.div
@@ -90,12 +127,37 @@ export function AddCatchForm({ onClose, initialLocation }: AddCatchFormProps) {
 
         <form onSubmit={handleSubmit} className="p-4 space-y-4">
           {/* Location */}
-          {location && (
-            <div className="flex items-center gap-2 text-sm text-gray-500 bg-gray-50 p-2 rounded-lg">
-              <MapPin size={16} />
-              <span>{location.lat.toFixed(5)}, {location.lng.toFixed(5)}</span>
-            </div>
-          )}
+          <div className="space-y-2">
+            {location ? (
+              <div className="flex items-center justify-between gap-2 text-sm bg-gray-50 p-2 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <SourceIcon size={16} className={sourceInfo.color} />
+                  <span className="text-gray-600">
+                    {location.lat.toFixed(5)}, {location.lng.toFixed(5)}
+                  </span>
+                </div>
+                <span className={`text-xs ${sourceInfo.color} font-medium`}>
+                  {sourceInfo.label}
+                </span>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between gap-2 text-sm bg-red-50 p-2 rounded-lg text-red-600">
+                <div className="flex items-center gap-2">
+                  <MapPin size={16} />
+                  <span>Geen locatie</span>
+                </div>
+                {gpsPosition && (
+                  <button
+                    type="button"
+                    onClick={handleUseGPS}
+                    className="text-xs bg-blue-500 text-white px-2 py-1 rounded-md border-0 outline-none"
+                  >
+                    Gebruik GPS
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
 
           {/* Species */}
           <div>

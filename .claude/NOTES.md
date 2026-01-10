@@ -1,6 +1,6 @@
 # VisApp NL - Sessienotities
 
-## Huidige versie: 1.2.1
+## Huidige versie: 1.2.2
 
 ---
 
