@@ -1,0 +1,272 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  width: 100%;
+  font-family: system-ui, -apple-system, sans-serif;
+  overflow: hidden;
+}
+
+#map {
+  height: 100%;
+  width: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+/* OpenLayers controls */
+.ol-rotate {
+  display: none !important;
+}
+
+.ol-scale-line {
+  position: absolute !important;
+  bottom: 60px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  right: auto !important;
+  top: auto !important;
+  background: transparent !important;
+  padding: 0 !important;
+  z-index: 500 !important;
+  pointer-events: none !important;
+}
+
+.ol-scale-line-inner {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border: 1px solid #555 !important;
+  border-top: none !important;
+  color: #333 !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  text-align: center !important;
+  padding: 2px 6px !important;
+  border-radius: 0 0 3px 3px !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Search box */
+.search-input-wrapper {
+  display: flex;
+  align-items: center;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  padding: 0 12px;
+  height: 44px;
+}
+
+.search-icon {
+  color: #9ca3af;
+  flex-shrink: 0;
+}
+
+.search-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  padding: 10px 12px;
+  font-size: 15px;
+  background: transparent;
+}
+
+.search-input::placeholder {
+  color: #9ca3af;
+}
+
+.search-clear {
+  padding: 4px;
+  border: none;
+  background: transparent;
+  color: #9ca3af;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.search-clear:hover {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.search-results {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  margin-top: 4px;
+  max-height: 300px;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.search-result-item {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid #f3f4f6;
+  transition: background 0.15s;
+}
+
+.search-result-item:last-child {
+  border-bottom: none;
+}
+
+.search-result-item:hover {
+  background: #f9fafb;
+}
+
+.search-result-content {
+  flex: 1;
+  padding: 12px;
+  cursor: pointer;
+}
+
+.search-result-text {
+  font-size: 14px;
+  color: #374151;
+}
+
+.search-navigate-btn {
+  padding: 12px;
+  border: none;
+  background: transparent;
+  color: #9ca3af;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.search-navigate-btn:hover {
+  color: #3b82f6;
+}
+
+.search-loading {
+  padding: 12px;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 14px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  margin-top: 4px;
+}
+
+/* OpenLayers Popup */
+.ol-popup {
+  position: absolute;
+  background-color: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  padding: 16px;
+  border-radius: 8px;
+  min-width: 200px;
+  max-width: 300px;
+}
+
+.ol-popup:after {
+  top: 100%;
+  border: solid transparent;
+  content: " ";
+  height: 0;
+  width: 0;
+  position: absolute;
+  pointer-events: none;
+  border-top-color: white;
+  border-width: 10px;
+  left: 50%;
+  margin-left: -10px;
+}
+
+.ol-popup-closer {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  cursor: pointer;
+  color: #9ca3af;
+}
+
+.ol-popup-closer:hover {
+  color: #ef4444;
+}
+
+/* Weather condition colors */
+.condition-excellent { color: #22c55e; }
+.condition-good { color: #84cc16; }
+.condition-moderate { color: #f59e0b; }
+.condition-poor { color: #ef4444; }
+
+/* Fish category colors */
+.fish-roofvis { background-color: #ef4444; }
+.fish-karperachtig { background-color: #f59e0b; }
+.fish-forel { background-color: #3b82f6; }
+.fish-aal { background-color: #6b7280; }
+.fish-zout { background-color: #06b6d4; }
+.fish-overig { background-color: #8b5cf6; }
+
+/* Button styles */
+.btn-primary {
+  @apply bg-blue-500 text-white px-4 py-2 rounded-lg font-medium;
+  @apply hover:bg-blue-600 active:bg-blue-700;
+  @apply transition-colors;
+}
+
+.btn-secondary {
+  @apply bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-medium;
+  @apply hover:bg-gray-200 active:bg-gray-300;
+  @apply transition-colors;
+}
+
+/* Form inputs - GEEN BORDERS (clean look) */
+.form-input {
+  @apply w-full px-3 py-2 bg-gray-100 rounded-lg border-0 outline-none;
+  @apply focus:ring-2 focus:ring-blue-500;
+}
+
+.form-select {
+  @apply w-full px-3 py-2 bg-gray-100 rounded-lg border-0 outline-none;
+  @apply focus:ring-2 focus:ring-blue-500;
+}
+
+/* Panel styles */
+.panel {
+  @apply bg-white rounded-lg shadow-lg;
+}
+
+.panel-header {
+  @apply px-4 py-3 font-semibold bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-t-lg;
+}
+
+.panel-content {
+  @apply p-4;
+}
+
+/* Icon buttons - ONZICHTBAAR (alleen icoon zichtbaar) */
+.icon-btn {
+  @apply p-1.5 border-0 outline-none bg-transparent transition-colors;
+}
+
+.icon-btn-gray {
+  @apply icon-btn text-gray-500 hover:text-gray-600;
+}
+
+.icon-btn-blue {
+  @apply icon-btn text-blue-500 hover:text-blue-600;
+}
+
+.icon-btn-red {
+  @apply icon-btn text-red-500 hover:text-red-600;
+}
+
+.icon-btn-green {
+  @apply icon-btn text-green-500 hover:text-green-600;
+}

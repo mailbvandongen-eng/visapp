@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find \"C:\"\" -type d -name \"*detectorapp* \")",
+      "Bash(cat:*)",
+      "Bash(xargs:*)",
+      "Bash(dir /s /b \"C:\\VSCode\\detectorapp-nl\\src\\*.ts\" \"C:\\VSCode\\detectorapp-nl\\src\\*.tsx\")",
+      "Bash(npm install:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npx tsc:*)",
+      "Bash(timeout 8 npm run dev:*)",
+      "Bash(dir /b)",
+      "Bash(git init:*)",
+      "Bash(gh auth status:*)",
+      "Bash(/c/Program Files/GitHub CLI/gh.exe auth status)",
+      "Bash(/c/Users/bobva/AppData/Local/GitHub CLI/gh.exe auth status)",
+      "Bash(npm run build:*)"
+    ]
+  }
+}
