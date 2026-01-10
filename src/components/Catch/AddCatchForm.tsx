@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
-import { X, Fish, MapPin, Scale, Ruler, Navigation, Camera, Map } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { X, Fish, MapPin, Scale, Ruler, Navigation, Camera, Map, Sparkles, Loader2 } from 'lucide-react'
 import { useCatchStore, useWeatherStore, useGPSStore } from '../../store'
 import { FISH_SPECIES, FISHING_METHODS, BAIT_TYPES } from '../../data/fishSpecies'
 import { PhotoCapture } from './PhotoCapture'
 import { extractGPSFromPhoto } from '../../lib/exifUtils'
 import { processImageForUpload, generatePhotoId } from '../../lib/imageUtils'
+import { recognizeFish, getFishInfo } from '../../lib/fishRecognition'
 import type { PhotoData } from '../../store/catchStore'
 import type { LocationSource } from '../../store/uiStore'
 
@@ -37,9 +38,45 @@ export function AddCatchForm({ onClose, initialLocation, initialLocationSource, 
   const [notes, setNotes] = useState('')
   const [photos, setPhotos] = useState<PhotoData[]>(initialPhotos)
 
-  // Handle photo adding with EXIF extraction
+  // AI recognition state
+  const [isRecognizing, setIsRecognizing] = useState(false)
+  const [aiSuggestions, setAiSuggestions] = useState<string[]>([])
+  const [aiConfidence, setAiConfidence] = useState(0)
+
+  // Handle photo adding with EXIF extraction and AI recognition
   const handleAddPhoto = async (photo: PhotoData) => {
     setPhotos(prev => [...prev, photo])
+
+    // Try AI fish recognition
+    if (photo.dataUrl && !species) {
+      setIsRecognizing(true)
+      try {
+        const result = await recognizeFish(photo.dataUrl)
+        setAiSuggestions(result.suggestions)
+        setAiConfidence(result.confidence)
+
+        // Auto-fill if high confidence
+        if (result.species && result.confidence > 0.4) {
+          setSpecies(result.species)
+
+          // Suggest typical weight/length if not set
+          const fishInfo = getFishInfo(result.species)
+          if (fishInfo && !weight && !length) {
+            // Don't auto-fill, but show in placeholder
+          }
+        }
+      } catch (error) {
+        console.error('AI recognition failed:', error)
+      } finally {
+        setIsRecognizing(false)
+      }
+    }
+  }
+
+  // Handle AI suggestion click
+  const handleSuggestionClick = (suggestedSpecies: string) => {
+    setSpecies(suggestedSpecies)
+    setAiSuggestions([])
   }
 
   const handleRemovePhoto = (photoId: string) => {
@@ -159,14 +196,53 @@ export function AddCatchForm({ onClose, initialLocation, initialLocationSource, 
             )}
           </div>
 
-          {/* Species */}
+          {/* Species with AI suggestions */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
               Vissoort *
+              {isRecognizing && (
+                <span className="flex items-center gap-1 text-xs text-blue-500">
+                  <Loader2 size={12} className="animate-spin" />
+                  AI analyseert...
+                </span>
+              )}
             </label>
+
+            {/* AI Suggestions */}
+            <AnimatePresence>
+              {aiSuggestions.length > 0 && !species && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="mb-2 p-2 bg-blue-50 rounded-lg border border-blue-200"
+                >
+                  <div className="flex items-center gap-1 text-xs text-blue-600 mb-2">
+                    <Sparkles size={12} />
+                    <span>AI suggesties {aiConfidence > 0.3 ? `(${Math.round(aiConfidence * 100)}% zeker)` : ''}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {aiSuggestions.map((suggestion) => (
+                      <button
+                        key={suggestion}
+                        type="button"
+                        onClick={() => handleSuggestionClick(suggestion)}
+                        className="px-2 py-1 text-xs bg-white border border-blue-300 text-blue-700 rounded-full hover:bg-blue-100 transition-colors"
+                      >
+                        {suggestion}
+                      </button>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             <select
               value={species}
-              onChange={(e) => setSpecies(e.target.value)}
+              onChange={(e) => {
+                setSpecies(e.target.value)
+                setAiSuggestions([])
+              }}
               className="form-select"
               required
             >

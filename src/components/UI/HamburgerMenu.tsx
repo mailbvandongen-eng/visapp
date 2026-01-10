@@ -204,7 +204,7 @@ export function HamburgerMenu() {
 
               {/* Version Footer */}
               <div className="px-3 py-1.5 bg-gray-50 text-center text-gray-400 text-xs">
-                VisApp NL v1.2.4
+                VisApp NL v1.2.5
               </div>
             </motion.div>
           </>
