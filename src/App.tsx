@@ -4,7 +4,6 @@ import { MapContainer } from './components/Map/MapContainer'
 import { LongPressMenu } from './components/Map/LongPressMenu'
 import { GpsButton } from './components/GPS/GpsButton'
 import { GpsMarker } from './components/GPS/GpsMarker'
-import { ZoomButtons } from './components/UI/ZoomButtons'
 import { SearchBox } from './components/UI/SearchBox'
 import { HamburgerMenu } from './components/UI/HamburgerMenu'
 import { InfoButton } from './components/UI/InfoButton'
@@ -34,8 +33,8 @@ function App() {
         <SpotMarkers />
         <LongPressMenu />
 
-        {/* Top bar: Zoom (left), Search & Menu (right) */}
-        <ZoomButtons />
+        {/* Top bar: Weather (left), Search & Menu (right) */}
+        <WeatherWidget />
         <SearchBox />
         <HamburgerMenu />
 
@@ -45,9 +44,6 @@ function App() {
         <LayerPanel />
         <AddCatchButton />
         <GpsButton />
-
-        {/* Floating widgets */}
-        <WeatherWidget />
 
         {/* Modals */}
         <InfoButton />

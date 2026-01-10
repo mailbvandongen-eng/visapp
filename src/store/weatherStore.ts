@@ -9,18 +9,26 @@ interface CurrentWeather {
   weatherCode: number
 }
 
+interface PressureDataPoint {
+  time: string
+  pressure: number
+}
+
 interface WeatherState {
   current: CurrentWeather | null
+  pressureHistory: PressureDataPoint[]
   loading: boolean
   lastUpdate: number | null
   error: string | null
 
   fetchWeather: (lat: number, lon: number) => Promise<void>
   getFishingCondition: () => 'excellent' | 'good' | 'moderate' | 'poor'
+  getPressureTrend: () => 'rising' | 'falling' | 'stable'
 }
 
 export const useWeatherStore = create<WeatherState>((set, get) => ({
   current: null,
+  pressureHistory: [],
   loading: false,
   lastUpdate: null,
   error: null,
@@ -33,11 +41,23 @@ export const useWeatherStore = create<WeatherState>((set, get) => ({
         latitude: lat.toString(),
         longitude: lon.toString(),
         current: 'temperature_2m,relative_humidity_2m,surface_pressure,wind_speed_10m,wind_direction_10m,weather_code',
+        hourly: 'surface_pressure',
+        past_hours: '24',
+        forecast_hours: '48',
         timezone: 'Europe/Amsterdam'
       })
 
       const response = await fetch(`https://api.open-meteo.com/v1/forecast?${params}`)
       const data = await response.json()
+
+      // Parse hourly pressure data
+      let pressureHistory: PressureDataPoint[] = []
+      if (data.hourly?.time && data.hourly?.surface_pressure) {
+        pressureHistory = data.hourly.time.map((time: string, i: number) => ({
+          time,
+          pressure: data.hourly.surface_pressure[i]
+        }))
+      }
 
       if (data.current) {
         set({
@@ -49,6 +69,7 @@ export const useWeatherStore = create<WeatherState>((set, get) => ({
             humidity: data.current.relative_humidity_2m,
             weatherCode: data.current.weather_code
           },
+          pressureHistory,
           loading: false,
           lastUpdate: Date.now()
         })
@@ -87,5 +108,24 @@ export const useWeatherStore = create<WeatherState>((set, get) => ({
     if (score >= 3) return 'good'
     if (score >= 1) return 'moderate'
     return 'poor'
+  },
+
+  getPressureTrend: () => {
+    const { pressureHistory } = get()
+    if (pressureHistory.length < 6) return 'stable'
+
+    // Compare last 6 hours average with 6 hours before that
+    const recent = pressureHistory.slice(-6)
+    const earlier = pressureHistory.slice(-12, -6)
+
+    if (earlier.length === 0) return 'stable'
+
+    const recentAvg = recent.reduce((sum, p) => sum + p.pressure, 0) / recent.length
+    const earlierAvg = earlier.reduce((sum, p) => sum + p.pressure, 0) / earlier.length
+    const diff = recentAvg - earlierAvg
+
+    if (diff > 2) return 'rising'
+    if (diff < -2) return 'falling'
+    return 'stable'
   }
 }))
