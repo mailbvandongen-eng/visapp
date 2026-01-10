@@ -1,11 +1,13 @@
 import { useState } from 'react'
-import { Menu, X, Info, Settings } from 'lucide-react'
+import { Menu, X, Info, Settings, LogOut, User } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useUIStore } from '../../store'
+import { useAuthStore } from '../../store/authStore'
 
 export function HamburgerMenu() {
   const [isOpen, setIsOpen] = useState(false)
   const { toggleInfoPanel, toggleSettingsPanel } = useUIStore()
+  const { user, logout } = useAuthStore()
 
   // Safe top position for mobile browsers (accounts for notch/status bar)
   const safeTopStyle = { top: 'max(0.5rem, env(safe-area-inset-top, 0.5rem))' }
@@ -20,6 +22,11 @@ export function HamburgerMenu() {
   const handleSettingsClick = () => {
     closeMenu()
     toggleSettingsPanel()
+  }
+
+  const handleLogout = async () => {
+    closeMenu()
+    await logout()
   }
 
   return (
@@ -83,7 +90,7 @@ export function HamburgerMenu() {
                 </button>
               </div>
 
-              {/* Settings always at bottom */}
+              {/* Settings and Logout */}
               <div className="mt-auto border-t border-gray-100">
                 <button
                   onClick={handleSettingsClick}
@@ -91,6 +98,26 @@ export function HamburgerMenu() {
                 >
                   <Settings size={18} className="text-gray-500" />
                   <span>Instellingen</span>
+                </button>
+
+                {/* User info & Logout */}
+                {user && (
+                  <div className="px-3 py-2 border-t border-gray-100 flex items-center gap-2">
+                    {user.photoURL ? (
+                      <img src={user.photoURL} alt="" className="w-6 h-6 rounded-full" />
+                    ) : (
+                      <User size={16} className="text-gray-400" />
+                    )}
+                    <span className="text-xs text-gray-500 truncate flex-1">{user.displayName || user.email}</span>
+                  </div>
+                )}
+
+                <button
+                  onClick={handleLogout}
+                  className="w-full px-3 py-2.5 text-left flex items-center gap-3 border-0 outline-none bg-transparent transition-colors text-red-600 hover:bg-red-50 text-sm"
+                >
+                  <LogOut size={18} />
+                  <span>Uitloggen</span>
                 </button>
               </div>
 

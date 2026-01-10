@@ -14,7 +14,17 @@
       "Bash(gh auth status:*)",
       "Bash(/c/Program Files/GitHub CLI/gh.exe auth status)",
       "Bash(/c/Users/bobva/AppData/Local/GitHub CLI/gh.exe auth status)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nInitial commit: VisApp - Vis app voor jou en je vismaat\n\nFeatures:\n- Kaart met aanlegsteigers, boothellingen, dieptekaart, viswater\n- GPS tracking en locatie\n- Vangst registratie met vissoorten\n- Favoriete plekken opslaan\n- Weer widget met wind en temperatuur\n- Presets voor snelle laag selectie\n- Wachtwoordbeveiliging\n- Long press menu (streetview, google maps, etc)\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(winget install:*)",
+      "Bash(choco install:*)",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" auth status)",
+      "Bash(export PATH=\"$PATH:/c/Program Files/GitHub CLI\")",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" auth login --web -h github.com)",
+      "Bash(git remote set-url:*)",
+      "Bash(git branch:*)",
+      "Bash(git push:*)",
+      "Bash(git add:*)"
     ]
   }
 }

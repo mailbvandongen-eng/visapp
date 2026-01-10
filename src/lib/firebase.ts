@@ -3,14 +3,14 @@ import { getAuth } from 'firebase/auth'
 import { getFirestore, enableIndexedDbPersistence } from 'firebase/firestore'
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage'
 
-// Firebase config - replace with your actual config from Firebase Console
+// Firebase config
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'REPLACE_WITH_YOUR_API_KEY',
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'your-project.firebaseapp.com',
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'your-project-id',
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'your-project.appspot.com',
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '123456789',
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || '1:123456789:web:abcdef'
+  apiKey: "AIzaSyDsC3MhJwjLu-2Gq3rRNP6cfgAQc2sLF88",
+  authDomain: "visapp-nl.firebaseapp.com",
+  projectId: "visapp-nl",
+  storageBucket: "visapp-nl.firebasestorage.app",
+  messagingSenderId: "1095904118758",
+  appId: "1:1095904118758:web:38f8be80439bcd788a7827"
 }
 
 // Initialize Firebase

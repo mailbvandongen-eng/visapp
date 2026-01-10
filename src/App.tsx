@@ -16,6 +16,7 @@ import { CatchMarkers } from './components/Catch/CatchMarkers'
 import { SpotMarkers } from './components/Spots/SpotMarkers'
 import { AddSpotForm } from './components/Spots/AddSpotForm'
 import { LayerPanel } from './components/UI/LayerPanel'
+import { SettingsPanel } from './components/UI/SettingsPanel'
 import { PasswordGate } from './components/Auth/PasswordGate'
 import { useUIStore } from './store'
 
@@ -50,6 +51,7 @@ function App() {
 
         {/* Modals */}
         <InfoButton />
+        <SettingsPanel />
         <AnimatePresence>
           {spotFormOpen && (
             <AddSpotForm
