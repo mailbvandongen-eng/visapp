@@ -9,8 +9,7 @@ import { HamburgerMenu } from './components/UI/HamburgerMenu'
 import { InfoButton } from './components/UI/InfoButton'
 import { ResetButton } from './components/UI/ResetButton'
 import { PresetButtons } from './components/UI/PresetButtons'
-import { WeatherWidget } from './components/Weather/WeatherWidget'
-import { WidgetStack } from './components/Weather/WidgetStack'
+import { FishingWidget } from './components/Weather/FishingWidget'
 import { AddCatchButton } from './components/Catch/AddCatchButton'
 import { CatchMarkers } from './components/Catch/CatchMarkers'
 import { SpotMarkers } from './components/Spots/SpotMarkers'
@@ -35,8 +34,7 @@ function App() {
         <LongPressMenu />
 
         {/* Top bar: Weather (left), Search & Menu (right) */}
-        <WeatherWidget />
-        <WidgetStack />
+        <FishingWidget />
         <SearchBox />
         <HamburgerMenu />
 
