@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Cloud, Sun, CloudRain, CloudSnow, CloudLightning, CloudFog, Wind,
   Thermometer, Droplets, ChevronDown, ChevronUp, RefreshCw,
-  Navigation, Waves, Moon, BarChart3, TrendingUp, TrendingDown, Minus, X, ChevronRight
+  Navigation, Waves, Moon, BarChart3, TrendingUp, TrendingDown, Minus, X, ChevronRight,
+  Search, MapPin, Play, Pause, Gauge
 } from 'lucide-react'
 import { useWeatherStore, useGPSStore, useSettingsStore } from '../../store'
 import { useWaterDataStore } from '../../store/waterDataStore'
@@ -392,9 +393,40 @@ function HourlyForecast({ hourly }: { hourly: HourlyData[] }) {
   )
 }
 
-// Extended Precipitation Modal with 48-hour forecast - Clean design
-function PrecipitationModal({ hourlyData, onClose }: { hourlyData: { time: string; precipitation: number; precipitationProbability: number }[]; onClose: () => void }) {
+// Dutch cities for location search
+const DUTCH_CITIES = [
+  { name: 'Amsterdam', lat: 52.3676, lng: 4.9041 },
+  { name: 'Rotterdam', lat: 51.9244, lng: 4.4777 },
+  { name: 'Den Haag', lat: 52.0705, lng: 4.3007 },
+  { name: 'Utrecht', lat: 52.0907, lng: 5.1214 },
+  { name: 'Eindhoven', lat: 51.4416, lng: 5.4697 },
+  { name: 'Groningen', lat: 53.2194, lng: 6.5665 },
+  { name: 'Tilburg', lat: 51.5555, lng: 5.0913 },
+  { name: 'Almere', lat: 52.3508, lng: 5.2647 },
+  { name: 'Breda', lat: 51.5719, lng: 4.7683 },
+  { name: 'Nijmegen', lat: 51.8126, lng: 5.8372 },
+  { name: 'Arnhem', lat: 51.9851, lng: 5.8987 },
+  { name: 'Haarlem', lat: 52.3874, lng: 4.6462 },
+  { name: 'Enschede', lat: 52.2215, lng: 6.8937 },
+  { name: 'Zwolle', lat: 52.5168, lng: 6.0830 },
+  { name: 'Maastricht', lat: 50.8514, lng: 5.6909 },
+  { name: 'Leiden', lat: 52.1601, lng: 4.4970 },
+  { name: 'Dordrecht', lat: 51.8133, lng: 4.6901 },
+  { name: 'Zoetermeer', lat: 52.0575, lng: 4.4931 },
+  { name: 'Leeuwarden', lat: 53.2012, lng: 5.7999 },
+  { name: 'Den Bosch', lat: 51.6978, lng: 5.3037 },
+]
+
+// Extended Precipitation Modal with 48-hour forecast and location search
+function PrecipitationModal({ hourlyData, onClose, onLocationChange }: {
+  hourlyData: { time: string; precipitation: number; precipitationProbability: number }[];
+  onClose: () => void;
+  onLocationChange?: (lat: number, lng: number, name: string) => void;
+}) {
   const [selectedTime, setSelectedTime] = useState(new Date())
+  const [searchQuery, setSearchQuery] = useState('')
+  const [showSearch, setShowSearch] = useState(false)
+  const [selectedLocation, setSelectedLocation] = useState<string | null>(null)
 
   const now = new Date()
   const minTime = useMemo(() => { const t = new Date(now); t.setHours(t.getHours(), 0, 0, 0); return t }, [])
@@ -407,6 +439,10 @@ function PrecipitationModal({ hourlyData, onClose }: { hourlyData: { time: strin
     const t = new Date(h.time)
     return t >= minTime && t <= maxTime
   })
+
+  const filteredCities = DUTCH_CITIES.filter(c =>
+    c.name.toLowerCase().includes(searchQuery.toLowerCase())
+  ).slice(0, 6)
 
   const formatDate = (date: Date) => {
     const today = new Date(); today.setHours(0, 0, 0, 0)
@@ -427,6 +463,15 @@ function PrecipitationModal({ hourlyData, onClose }: { hourlyData: { time: strin
 
   const maxPrecip = Math.max(...forecast48h.map(h => h.precipitation), 1)
   const hasRain = forecast48h.some(h => h.precipitation > 0)
+
+  const handleCitySelect = (city: typeof DUTCH_CITIES[0]) => {
+    setSelectedLocation(city.name)
+    setShowSearch(false)
+    setSearchQuery('')
+    if (onLocationChange) {
+      onLocationChange(city.lat, city.lng, city.name)
+    }
+  }
 
   return (
     <motion.div
@@ -456,6 +501,52 @@ function PrecipitationModal({ hourlyData, onClose }: { hourlyData: { time: strin
             </button>
           </div>
 
+          {/* Location search */}
+          <div className="relative">
+            <button
+              onClick={() => setShowSearch(!showSearch)}
+              className="w-full flex items-center gap-2 px-3 py-2 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors border-0 outline-none text-left"
+            >
+              <MapPin size={16} className="text-gray-400" />
+              <span className="flex-1 text-sm text-gray-700">{selectedLocation || 'Huidige locatie'}</span>
+              <Search size={14} className="text-gray-400" />
+            </button>
+
+            {showSearch && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl shadow-lg border border-gray-100 z-10 overflow-hidden">
+                <div className="p-2 border-b border-gray-100">
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Zoek plaats..."
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-400"
+                    autoFocus
+                  />
+                </div>
+                <div className="max-h-40 overflow-y-auto">
+                  <button
+                    onClick={() => { setSelectedLocation(null); setShowSearch(false); if (onLocationChange) onLocationChange(DEFAULT_LOCATION.lat, DEFAULT_LOCATION.lng, 'Huidige locatie') }}
+                    className="w-full flex items-center gap-2 px-3 py-2 hover:bg-gray-50 border-0 outline-none bg-transparent text-left"
+                  >
+                    <Navigation size={14} className="text-blue-500" />
+                    <span className="text-sm text-gray-700">Huidige locatie</span>
+                  </button>
+                  {filteredCities.map(city => (
+                    <button
+                      key={city.name}
+                      onClick={() => handleCitySelect(city)}
+                      className="w-full flex items-center gap-2 px-3 py-2 hover:bg-gray-50 border-0 outline-none bg-transparent text-left"
+                    >
+                      <MapPin size={14} className="text-gray-400" />
+                      <span className="text-sm text-gray-700">{city.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Selected info */}
           <div className="bg-blue-50 rounded-xl p-3 flex items-center justify-between">
             <div>
@@ -473,18 +564,21 @@ function PrecipitationModal({ hourlyData, onClose }: { hourlyData: { time: strin
           </div>
 
           {/* Bar graph */}
-          <div className="relative bg-gray-100 rounded-xl p-2 h-24">
-            <div className="absolute inset-2 flex items-end gap-px">
+          <div className="relative bg-gray-100 rounded-xl p-2 h-28">
+            {/* Now indicator text */}
+            <div className="absolute top-1 left-2 text-[9px] font-medium text-amber-600">▼ Nu</div>
+            <div className="absolute inset-2 pt-3 flex items-end gap-px">
               {forecast48h.map((h, i) => {
                 const height = (h.precipitation / maxPrecip) * 100
                 const t = new Date(h.time)
                 const isSelected = t.getHours() === selectedTime.getHours() && t.getDate() === selectedTime.getDate()
+                const isNow = i === 0
                 const intensity = h.precipitation > 2 ? 'bg-blue-600' :
                                  h.precipitation > 0.5 ? 'bg-blue-500' :
                                  h.precipitation > 0 ? 'bg-blue-400' : 'bg-gray-200'
                 return (
                   <div key={i} className="flex-1 cursor-pointer h-full flex flex-col justify-end" onClick={() => setSelectedTime(t)}>
-                    <div className={`w-full rounded-t transition-all ${intensity} ${isSelected ? 'ring-2 ring-amber-400 ring-offset-1' : ''}`}
+                    <div className={`w-full rounded-t transition-all ${intensity} ${isSelected ? 'ring-2 ring-amber-400 ring-offset-1' : ''} ${isNow ? 'ring-1 ring-amber-500' : ''}`}
                       style={{ height: `${Math.max(height, h.precipitation > 0 ? 8 : 3)}%` }} />
                   </div>
                 )
@@ -497,18 +591,18 @@ function PrecipitationModal({ hourlyData, onClose }: { hourlyData: { time: strin
             </div>
           </div>
 
-          {/* Slider */}
-          <input
-            type="range" min="0" max="100" value={sliderValue}
-            onChange={(e) => setSelectedTime(new Date(minTime.getTime() + (parseFloat(e.target.value) / 100) * timeRange))}
-            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-500"
-          />
-
-          {/* Quick buttons */}
-          <div className="flex gap-2">
-            <button onClick={() => setSelectedTime(new Date())} className="flex-1 px-3 py-2 text-sm bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-xl transition-colors border-0 outline-none font-medium">Nu</button>
-            <button onClick={() => { const t = new Date(); t.setDate(t.getDate() + 1); t.setHours(8, 0, 0, 0); setSelectedTime(t) }} className="flex-1 px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors border-0 outline-none">Morgen 8:00</button>
-            <button onClick={() => { const t = new Date(); t.setDate(t.getDate() + 1); t.setHours(18, 0, 0, 0); setSelectedTime(t) }} className="flex-1 px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors border-0 outline-none">Morgen 18:00</button>
+          {/* Slider with current position indicator */}
+          <div className="space-y-1">
+            <input
+              type="range" min="0" max="100" value={sliderValue}
+              onChange={(e) => setSelectedTime(new Date(minTime.getTime() + (parseFloat(e.target.value) / 100) * timeRange))}
+              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-500"
+            />
+            <div className="flex justify-between text-[9px] text-gray-400">
+              <span className={sliderValue < 5 ? 'text-amber-600 font-medium' : ''}>Nu</span>
+              <span>{formatDate(selectedTime)} {formatHour(selectedTime)}</span>
+              <span>+48u</span>
+            </div>
           </div>
 
           {/* Legend */}
@@ -1001,6 +1095,388 @@ function WaterDataModal({ onClose }: { onClose: () => void }) {
   )
 }
 
+// Pressure Modal with fishing activity timeline
+function PressureModal({ pressureHistory, currentPressure, trend, onClose }: {
+  pressureHistory: { time: string; pressure: number }[];
+  currentPressure: number;
+  trend: 'rising' | 'falling' | 'stable';
+  onClose: () => void;
+}) {
+  const [selectedHour, setSelectedHour] = useState(12) // Current time marker
+
+  // Get 48 hours of data
+  const now = new Date()
+  const data48h = pressureHistory.slice(-72) // Get more data for display
+
+  const minPressure = Math.min(...data48h.map(d => d.pressure), 990)
+  const maxPressure = Math.max(...data48h.map(d => d.pressure), 1040)
+  const range = maxPressure - minPressure || 20
+
+  // Calculate fish activity based on pressure changes
+  const getFishActivityForHour = (hourIndex: number): number => {
+    if (hourIndex >= data48h.length - 1 || hourIndex < 1) return 0.5
+    const pressureChange = data48h[hourIndex].pressure - data48h[hourIndex - 1].pressure
+    const currentP = data48h[hourIndex].pressure
+
+    let activity = 0.5
+
+    // Rising pressure is good
+    if (pressureChange > 0.5) activity += 0.3
+    else if (pressureChange < -0.5) activity -= 0.2
+
+    // Optimal pressure range
+    if (currentP >= 1010 && currentP <= 1025) activity += 0.2
+
+    // Stable high pressure is excellent
+    if (currentP > 1020 && Math.abs(pressureChange) < 0.3) activity += 0.2
+
+    return Math.max(0, Math.min(1, activity))
+  }
+
+  // Find best fishing hours
+  const hourActivities = data48h.map((_, i) => ({ hour: i, activity: getFishActivityForHour(i) }))
+  const bestHours = [...hourActivities].sort((a, b) => b.activity - a.activity).slice(0, 5)
+
+  const getTrendIcon = () => {
+    if (trend === 'rising') return <TrendingUp size={16} className="text-green-500" />
+    if (trend === 'falling') return <TrendingDown size={16} className="text-red-500" />
+    return <Minus size={16} className="text-gray-400" />
+  }
+
+  const getTrendText = () => {
+    if (trend === 'rising') return 'Stijgend - Goed voor vissen!'
+    if (trend === 'falling') return 'Dalend - Minder activiteit'
+    return 'Stabiel'
+  }
+
+  return (
+    <motion.div
+      className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/50 p-4"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      onClick={onClose}
+    >
+      <motion.div
+        className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden select-none"
+        initial={{ scale: 0.9, opacity: 0, y: 20 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.9, opacity: 0, y: 20 }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="p-4 space-y-4">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Gauge size={20} className="text-purple-500" />
+              <span className="font-semibold text-gray-800">Luchtdruk</span>
+            </div>
+            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors border-0 outline-none bg-transparent">
+              <X size={16} className="text-gray-500" />
+            </button>
+          </div>
+
+          {/* Current pressure */}
+          <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-3xl font-bold text-purple-600">{Math.round(currentPressure)} hPa</div>
+                <div className="flex items-center gap-1 mt-1">
+                  {getTrendIcon()}
+                  <span className="text-sm text-gray-600">{getTrendText()}</span>
+                </div>
+              </div>
+              <div className="text-right">
+                <FishScale value={getFishActivityForHour(data48h.length - 1) * 3} color={
+                  getFishActivityForHour(data48h.length - 1) > 0.7 ? 'text-green-500' :
+                  getFishActivityForHour(data48h.length - 1) > 0.4 ? 'text-amber-500' : 'text-red-500'
+                } />
+                <div className="text-[10px] text-gray-500 mt-1">Nu</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Pressure graph with fish activity */}
+          <div className="space-y-1">
+            <div className="text-[10px] text-gray-500">Druk & visactiviteit (48 uur)</div>
+            <div className="relative bg-gray-100 rounded-xl p-2 h-32">
+              {/* Pressure curve */}
+              <svg className="absolute inset-2 w-[calc(100%-16px)] h-[calc(100%-16px)]" viewBox="0 0 100 100" preserveAspectRatio="none">
+                {/* Fish activity bars (background) */}
+                {data48h.slice(-48).map((_, i) => {
+                  const activity = getFishActivityForHour(data48h.length - 48 + i)
+                  const x = (i / 47) * 100
+                  const height = activity * 30
+                  const color = activity > 0.7 ? '#22c55e' : activity > 0.4 ? '#f59e0b' : '#ef4444'
+                  return (
+                    <rect
+                      key={i}
+                      x={x - 1}
+                      y={100 - height}
+                      width={2}
+                      height={height}
+                      fill={color}
+                      opacity="0.3"
+                    />
+                  )
+                })}
+                {/* Pressure line */}
+                <path
+                  d={`M ${data48h.slice(-48).map((d, i) => {
+                    const x = (i / 47) * 100
+                    const y = 100 - ((d.pressure - minPressure) / range) * 80
+                    return `${x} ${y}`
+                  }).join(' L ')}`}
+                  fill="none"
+                  stroke="#8b5cf6"
+                  strokeWidth="2"
+                />
+                {/* Optimal zone */}
+                <rect x="0" y={100 - ((1025 - minPressure) / range) * 80} width="100" height={((1025 - 1010) / range) * 80} fill="#22c55e" opacity="0.1" />
+              </svg>
+
+              {/* Labels */}
+              <div className="absolute top-1 left-2 text-[9px] text-gray-400">{Math.round(maxPressure)}</div>
+              <div className="absolute bottom-4 left-2 text-[9px] text-gray-400">{Math.round(minPressure)}</div>
+              <div className="absolute bottom-0.5 left-2 right-2 flex justify-between text-[8px] text-gray-400">
+                <span>-48u</span>
+                <span>-24u</span>
+                <span>Nu</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Best fishing times */}
+          <div className="space-y-2">
+            <div className="text-[10px] text-gray-500 flex items-center gap-1">
+              <FishIcon size={12} className="text-green-500" />
+              Beste vistijden (op basis van druk)
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {bestHours.slice(0, 4).map((h, i) => {
+                const time = new Date(data48h[h.hour]?.time || now)
+                const isToday = time.getDate() === now.getDate()
+                return (
+                  <div key={i} className="bg-green-50 rounded-lg px-2 py-1 text-xs">
+                    <span className="text-green-700 font-medium">
+                      {isToday ? 'Vandaag' : 'Morgen'} {time.getHours()}:00
+                    </span>
+                    <span className="text-green-500 ml-1">
+                      {Math.round(h.activity * 100)}%
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Legend */}
+          <div className="flex items-center justify-center gap-4 text-[10px] text-gray-400">
+            <div className="flex items-center gap-1">
+              <div className="w-3 h-1.5 rounded-sm bg-green-400 opacity-50" />
+              <span>Actief</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-3 h-1.5 rounded-sm bg-amber-400 opacity-50" />
+              <span>Matig</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-8 h-3 rounded-sm bg-green-500 opacity-20" />
+              <span>Optimale zone</span>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
+  )
+}
+
+// Rain Radar Modal with animated map
+function RainRadarModal({ onClose }: { onClose: () => void }) {
+  const [isPlaying, setIsPlaying] = useState(true)
+  const [frameIndex, setFrameIndex] = useState(0)
+  const [radarFrames, setRadarFrames] = useState<string[]>([])
+  const position = useGPSStore(state => state.position)
+
+  // RainViewer API for radar frames
+  useEffect(() => {
+    const fetchRadarData = async () => {
+      try {
+        const response = await fetch('https://api.rainviewer.com/public/weather-maps.json')
+        const data = await response.json()
+        if (data.radar?.past) {
+          const frames = data.radar.past.map((f: { path: string }) =>
+            `https://tilecache.rainviewer.com${f.path}/256/{z}/{x}/{y}/2/1_1.png`
+          )
+          // Add nowcast frames
+          if (data.radar?.nowcast) {
+            frames.push(...data.radar.nowcast.map((f: { path: string }) =>
+              `https://tilecache.rainviewer.com${f.path}/256/{z}/{x}/{y}/2/1_1.png`
+            ))
+          }
+          setRadarFrames(frames)
+        }
+      } catch (error) {
+        console.error('Failed to fetch radar data:', error)
+      }
+    }
+    fetchRadarData()
+  }, [])
+
+  // Animation loop
+  useEffect(() => {
+    if (!isPlaying || radarFrames.length === 0) return
+    const interval = setInterval(() => {
+      setFrameIndex(prev => (prev + 1) % radarFrames.length)
+    }, 500)
+    return () => clearInterval(interval)
+  }, [isPlaying, radarFrames.length])
+
+  const lat = position?.lat || 52.1326
+  const lng = position?.lng || 5.2913
+  const zoom = 7
+
+  // Calculate tile coordinates
+  const n = Math.pow(2, zoom)
+  const x = Math.floor((lng + 180) / 360 * n)
+  const y = Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * n)
+
+  const getCurrentFrame = () => {
+    if (radarFrames.length === 0) return null
+    return radarFrames[frameIndex]?.replace('{z}', zoom.toString()).replace('{x}', x.toString()).replace('{y}', y.toString())
+  }
+
+  const getTimeLabel = () => {
+    if (radarFrames.length === 0) return 'Laden...'
+    const pastFrames = 12 // Approximate past frames
+    const diff = frameIndex - pastFrames
+    if (diff < -5) return `-${Math.abs(diff) * 5} min`
+    if (diff < 0) return `-${Math.abs(diff) * 5} min`
+    if (diff === 0) return 'Nu'
+    return `+${diff * 5} min`
+  }
+
+  return (
+    <motion.div
+      className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/50 p-4"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      onClick={onClose}
+    >
+      <motion.div
+        className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden select-none"
+        initial={{ scale: 0.9, opacity: 0, y: 20 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.9, opacity: 0, y: 20 }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="p-4 space-y-3">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <CloudRain size={20} className="text-blue-500" />
+              <span className="font-semibold text-gray-800">Buienradar</span>
+            </div>
+            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors border-0 outline-none bg-transparent">
+              <X size={16} className="text-gray-500" />
+            </button>
+          </div>
+
+          {/* Radar map */}
+          <div className="relative bg-gray-200 rounded-xl overflow-hidden" style={{ aspectRatio: '1/1' }}>
+            {/* Base map (OSM) - 3x3 grid for more coverage */}
+            <div className="absolute inset-0 grid grid-cols-3 grid-rows-3">
+              {[-1, 0, 1].map(dy =>
+                [-1, 0, 1].map(dx => (
+                  <img
+                    key={`${dx}-${dy}`}
+                    src={`https://tile.openstreetmap.org/${zoom}/${x + dx}/${y + dy}.png`}
+                    alt=""
+                    className="w-full h-full object-cover"
+                    style={{ filter: 'saturate(0.3) brightness(1.1)' }}
+                  />
+                ))
+              )}
+            </div>
+
+            {/* Radar overlay - 3x3 grid */}
+            {getCurrentFrame() && (
+              <div className="absolute inset-0 grid grid-cols-3 grid-rows-3">
+                {[-1, 0, 1].map(dy =>
+                  [-1, 0, 1].map(dx => (
+                    <img
+                      key={`radar-${dx}-${dy}`}
+                      src={radarFrames[frameIndex]?.replace('{z}', zoom.toString()).replace('{x}', (x + dx).toString()).replace('{y}', (y + dy).toString())}
+                      alt=""
+                      className="w-full h-full object-cover"
+                      style={{ mixBlendMode: 'multiply' }}
+                    />
+                  ))
+                )}
+              </div>
+            )}
+
+            {/* Time indicator */}
+            <div className="absolute top-2 right-2 bg-black/70 text-white px-2 py-1 rounded text-sm font-medium">
+              {getTimeLabel()}
+            </div>
+
+            {/* Location marker */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+              <div className="w-3 h-3 bg-blue-500 rounded-full border-2 border-white shadow-lg" />
+            </div>
+          </div>
+
+          {/* Timeline slider */}
+          <div className="space-y-2">
+            <input
+              type="range"
+              min="0"
+              max={Math.max(0, radarFrames.length - 1)}
+              value={frameIndex}
+              onChange={(e) => {
+                setIsPlaying(false)
+                setFrameIndex(parseInt(e.target.value))
+              }}
+              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-500"
+            />
+            <div className="flex justify-between text-[9px] text-gray-400">
+              <span>-1 uur</span>
+              <span>Nu</span>
+              <span>+30 min</span>
+            </div>
+          </div>
+
+          {/* Play controls */}
+          <div className="flex items-center justify-center gap-3">
+            <button
+              onClick={() => setIsPlaying(!isPlaying)}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-xl transition-colors border-0 outline-none"
+            >
+              {isPlaying ? <Pause size={16} /> : <Play size={16} />}
+              <span className="text-sm font-medium">{isPlaying ? 'Pauzeren' : 'Afspelen'}</span>
+            </button>
+          </div>
+
+          {/* Legend */}
+          <div className="flex items-center justify-center gap-2 text-[10px] text-gray-500">
+            <span>Licht</span>
+            <div className="flex h-2">
+              <div className="w-4 bg-blue-200 rounded-l" />
+              <div className="w-4 bg-blue-400" />
+              <div className="w-4 bg-blue-600" />
+              <div className="w-4 bg-purple-600" />
+              <div className="w-4 bg-red-500 rounded-r" />
+            </div>
+            <span>Zwaar</span>
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
+  )
+}
+
 export function FishingWidget() {
   const { current, loading, fetchWeather, getFishingScore, pressureHistory, getPressureTrend, hourlyForecast, precipitation15min } = useWeatherStore()
   const position = useGPSStore(state => state.position)
@@ -1012,6 +1488,8 @@ export function FishingWidget() {
   const [showWaterModal, setShowWaterModal] = useState(false)
   const [showPrecipModal, setShowPrecipModal] = useState(false)
   const [showMoonModal, setShowMoonModal] = useState(false)
+  const [showPressureModal, setShowPressureModal] = useState(false)
+  const [showRadarModal, setShowRadarModal] = useState(false)
 
   const safeTopStyle = { top: 'max(0.5rem, env(safe-area-inset-top, 0.5rem))' }
 
@@ -1200,51 +1678,92 @@ export function FishingWidget() {
                     </div>
                   </div>
 
-                  {/* Water data - clickable */}
-                  {waterData && (
+                  {/* Water data with station picker */}
+                  <div className="space-y-2">
+                    {/* Station picker inline */}
+                    <div className="flex items-center gap-2">
+                      <Droplets size={14} className="text-cyan-500" />
+                      <select
+                        value={station?.id || ''}
+                        onChange={(e) => {
+                          e.stopPropagation()
+                          const newStation = RWS_STATIONS.find(s => s.id === e.target.value)
+                          if (newStation) {
+                            const { setStation } = useWaterDataStore.getState()
+                            setStation(newStation)
+                          }
+                        }}
+                        className="flex-1 px-2 py-1 text-xs border border-gray-200 rounded-lg bg-white/80 outline-none focus:ring-1 focus:ring-cyan-400"
+                      >
+                        {RWS_STATIONS.map(s => (
+                          <option key={s.id} value={s.id}>{s.name}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Water data grid - all 4 items */}
                     <button
                       onClick={() => setShowWaterModal(true)}
                       className="w-full grid grid-cols-2 gap-2 border-0 bg-transparent p-0 cursor-pointer"
                     >
-                      {waterData.temperature !== undefined && (
+                      {waterData?.temperature !== undefined && (
                         <div className="bg-cyan-50 rounded-lg p-2 hover:bg-cyan-100 transition-colors">
-                          <div className="flex items-center justify-between text-[10px] text-gray-500">
-                            <div className="flex items-center gap-1">
-                              <Thermometer size={12} className="text-cyan-500" />
-                              <span>Water</span>
-                            </div>
-                            <ChevronRight size={10} className="text-gray-400" />
+                          <div className="flex items-center gap-1 text-[10px] text-gray-500">
+                            <Thermometer size={12} className="text-cyan-500" />
+                            <span>Water</span>
                           </div>
                           <div className="text-sm font-bold text-cyan-600 text-left">
                             {waterData.temperature.toFixed(1)}°C
                           </div>
                         </div>
                       )}
-                      {waterData.waveHeight !== undefined && (
+                      {waterData?.waveHeight !== undefined && (
                         <div className="bg-blue-50 rounded-lg p-2 hover:bg-blue-100 transition-colors">
-                          <div className="flex items-center justify-between text-[10px] text-gray-500">
-                            <div className="flex items-center gap-1">
-                              <Waves size={12} className="text-blue-500" />
-                              <span>Golven</span>
-                            </div>
-                            <ChevronRight size={10} className="text-gray-400" />
+                          <div className="flex items-center gap-1 text-[10px] text-gray-500">
+                            <Waves size={12} className="text-blue-500" />
+                            <span>Golven</span>
                           </div>
                           <div className="text-sm font-bold text-blue-600 text-left">
                             {waterData.waveHeight} cm
                           </div>
                         </div>
                       )}
+                      {waterData?.currentSpeed !== undefined && (
+                        <div className="bg-green-50 rounded-lg p-2 hover:bg-green-100 transition-colors">
+                          <div className="flex items-center gap-1 text-[10px] text-gray-500">
+                            <Navigation size={12} className="text-green-500" />
+                            <span>Stroming</span>
+                          </div>
+                          <div className="text-sm font-bold text-green-600 text-left">
+                            {waterData.currentSpeed} cm/s
+                          </div>
+                        </div>
+                      )}
+                      {waterData?.currentDirection !== undefined && (
+                        <div className="bg-purple-50 rounded-lg p-2 hover:bg-purple-100 transition-colors">
+                          <div className="flex items-center gap-1 text-[10px] text-gray-500">
+                            <Navigation size={12} className="text-purple-500" style={{ transform: `rotate(${waterData.currentDirection}deg)` }} />
+                            <span>Richting</span>
+                          </div>
+                          <div className="text-sm font-bold text-purple-600 text-left">
+                            {Math.round(waterData.currentDirection)}°
+                          </div>
+                        </div>
+                      )}
                     </button>
-                  )}
+                  </div>
 
-                  {/* Weather details */}
+                  {/* Weather details - pressure clickable */}
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <div className="flex items-center gap-1.5 text-gray-600">
                       <Wind size={12} className="text-gray-400" />
                       <span>{Math.round(current.windSpeed)} km/u {windDirectionToText(current.windDirection)}</span>
                     </div>
-                    <div className="flex items-center gap-1.5 text-gray-600">
-                      <BarChart3 size={12} className="text-gray-400" />
+                    <button
+                      onClick={() => setShowPressureModal(true)}
+                      className="flex items-center gap-1.5 text-gray-600 hover:bg-purple-50 rounded-lg p-1 -m-1 transition-colors border-0 bg-transparent cursor-pointer"
+                    >
+                      <Gauge size={12} className="text-purple-500" />
                       <span>{Math.round(current.pressure)} hPa</span>
                       {(() => {
                         const trend = getPressureTrend()
@@ -1252,8 +1771,20 @@ export function FishingWidget() {
                         if (trend === 'falling') return <TrendingDown size={12} className="text-red-500" />
                         return <Minus size={12} className="text-gray-400" />
                       })()}
-                    </div>
+                      <ChevronRight size={10} className="text-gray-400 ml-auto" />
+                    </button>
                   </div>
+
+                  {/* Rain radar button */}
+                  <button
+                    onClick={() => setShowRadarModal(true)}
+                    className="w-full flex items-center gap-2 p-2 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors border-0 cursor-pointer"
+                  >
+                    <CloudRain size={16} className="text-blue-500" />
+                    <span className="text-sm text-blue-700 font-medium">Buienradar</span>
+                    <span className="text-xs text-blue-500 ml-auto">Live kaart</span>
+                    <ChevronRight size={14} className="text-blue-400" />
+                  </button>
 
                   {/* Precipitation graph - clickable */}
                   {precipitation15min.length > 0 && (
@@ -1357,6 +1888,23 @@ export function FishingWidget() {
       <AnimatePresence>
         {showMoonModal && (
           <MoonModal onClose={() => setShowMoonModal(false)} />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showPressureModal && current && (
+          <PressureModal
+            pressureHistory={pressureHistory}
+            currentPressure={current.pressure}
+            trend={getPressureTrend()}
+            onClose={() => setShowPressureModal(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showRadarModal && (
+          <RainRadarModal onClose={() => setShowRadarModal(false)} />
         )}
       </AnimatePresence>
     </motion.div>

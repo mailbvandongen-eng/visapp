@@ -5,30 +5,29 @@ import { useSettingsStore, WidgetId } from '../../store'
 import { WindIndicator } from './WindIndicator'
 import { TideWidget } from './TideWidget'
 import { ForecastSlider } from './ForecastSlider'
-import { WaterDataWidget } from './WaterDataWidget'
 
 export function WidgetStack() {
   const showWindIndicator = useSettingsStore(state => state.showWindIndicator)
   const showTideWidget = useSettingsStore(state => state.showTideWidget)
   const showForecastSlider = useSettingsStore(state => state.showForecastSlider)
-  const showWaterDataWidget = useSettingsStore(state => state.showWaterDataWidget)
   const widgetOrder = useSettingsStore(state => state.widgetOrder)
   const setWidgetOrder = useSettingsStore(state => state.setWidgetOrder)
   const [isDragging, setIsDragging] = useState(false)
   const longPressTimer = useRef<NodeJS.Timeout | null>(null)
 
+  // WaterData is now integrated in FishingWidget
   const visibilityMap: Record<WidgetId, boolean> = {
     wind: showWindIndicator,
     tide: showTideWidget,
     forecast: showForecastSlider,
-    waterData: showWaterDataWidget
+    waterData: false // Disabled - now part of FishingWidget
   }
 
   const widgetComponents: Record<WidgetId, React.ReactNode> = {
     wind: <WindIndicator embedded />,
     tide: <TideWidget embedded />,
     forecast: <ForecastSlider embedded />,
-    waterData: <WaterDataWidget embedded />
+    waterData: null // Removed - now part of FishingWidget
   }
 
   const visibleWidgets = widgetOrder.filter(id => visibilityMap[id])
