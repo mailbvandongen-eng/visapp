@@ -81,31 +81,75 @@ function FishScale({ value, maxFish = 3, color }: { value: number; maxFish?: num
   )
 }
 
-// Moon phase component
+// Realistic moon phase component with 3D shading
 function MoonPhase({ phase, size = 20 }: { phase: number; size?: number }) {
   // phase: 0 = new moon, 0.5 = full moon, 1 = new moon again
+  // Create realistic moon with shadow
+
+  // Calculate shadow position based on phase
+  // 0 = new moon (fully dark), 0.25 = first quarter, 0.5 = full moon, 0.75 = last quarter
+  const shadowOffset = phase < 0.5
+    ? (0.5 - phase) * 2 // Waxing: shadow moves from right to left
+    : (phase - 0.5) * 2 // Waning: shadow moves from left to right
+
   const isWaxing = phase < 0.5
-  const illumination = phase < 0.5 ? phase * 2 : (1 - phase) * 2
 
   return (
     <div
-      className="relative rounded-full bg-gray-700 overflow-hidden"
-      style={{ width: size, height: size }}
+      className="relative rounded-full overflow-hidden"
+      style={{
+        width: size,
+        height: size,
+        background: 'linear-gradient(145deg, #f5f5dc 0%, #e8e4c9 50%, #d4d0b8 100%)',
+        boxShadow: `inset 0 0 ${size * 0.1}px rgba(0,0,0,0.1), 0 ${size * 0.05}px ${size * 0.1}px rgba(0,0,0,0.2)`
+      }}
     >
+      {/* Moon surface texture */}
       <div
-        className="absolute inset-0 bg-yellow-100"
+        className="absolute inset-0 rounded-full opacity-30"
         style={{
-          clipPath: isWaxing
-            ? `inset(0 ${(1 - illumination) * 100}% 0 0)`
-            : `inset(0 0 0 ${(1 - illumination) * 100}%)`
+          background: `radial-gradient(circle at 30% 30%, transparent 0%, rgba(139,119,101,0.3) 100%),
+                       radial-gradient(circle at 70% 60%, rgba(139,119,101,0.2) 0%, transparent 50%),
+                       radial-gradient(circle at 40% 70%, rgba(139,119,101,0.15) 0%, transparent 40%)`
         }}
       />
+
+      {/* Shadow overlay for phase */}
+      <div
+        className="absolute inset-0 rounded-full"
+        style={{
+          background: isWaxing
+            ? `linear-gradient(to left, transparent ${(1 - shadowOffset) * 100}%, rgba(20,20,30,0.95) ${(1 - shadowOffset) * 100 + 15}%)`
+            : `linear-gradient(to right, transparent ${(1 - shadowOffset) * 100}%, rgba(20,20,30,0.95) ${(1 - shadowOffset) * 100 + 15}%)`,
+        }}
+      />
+
+      {/* Terminator line (day/night boundary) - subtle glow */}
+      {phase > 0.02 && phase < 0.98 && (
+        <div
+          className="absolute top-0 bottom-0 w-[2px] opacity-20"
+          style={{
+            left: isWaxing ? `${(1 - shadowOffset) * 100}%` : `${shadowOffset * 100}%`,
+            background: 'linear-gradient(to bottom, transparent, rgba(255,255,200,0.5), transparent)'
+          }}
+        />
+      )}
+
+      {/* Earthshine effect for new moon */}
+      {(phase < 0.08 || phase > 0.92) && (
+        <div
+          className="absolute inset-0 rounded-full"
+          style={{
+            background: 'radial-gradient(circle at 50% 50%, rgba(100,120,150,0.15) 0%, transparent 70%)'
+          }}
+        />
+      )}
     </div>
   )
 }
 
-// Solunar activity bar
-function SolunarBar({ activity, label }: { activity: number; label: string }) {
+// Activiteit bar (maanstand-gebaseerd)
+function ActiviteitBar({ activity, label }: { activity: number; label: string }) {
   const getColor = () => {
     if (activity >= 0.8) return 'bg-green-500'
     if (activity >= 0.6) return 'bg-lime-500'
@@ -134,49 +178,6 @@ function getMoonPhase(date: Date): number {
   return (diff % synodic) / synodic
 }
 
-// Calculate solunar activity based on moon
-function getSolunarActivity(date: Date): { major: number[]; minor: number[]; overall: number } {
-  const moonPhase = getMoonPhase(date)
-  const hour = date.getHours()
-
-  // Moon transit times (simplified)
-  const moonTransit = Math.floor((moonPhase * 24 + 12) % 24)
-  const moonRise = (moonTransit + 6) % 24
-  const moonSet = (moonTransit + 18) % 24
-
-  // Major periods: moonrise and moon overhead (2 hours each)
-  const major = [moonTransit, (moonTransit + 12) % 24]
-  // Minor periods: moonrise and moonset (1 hour each)
-  const minor = [moonRise, moonSet]
-
-  // Calculate overall activity for current hour
-  let overall = 0.3 // Base activity
-
-  // New moon and full moon boost
-  if (moonPhase < 0.1 || moonPhase > 0.9 || (moonPhase > 0.4 && moonPhase < 0.6)) {
-    overall += 0.3
-  }
-
-  // Major period boost
-  major.forEach(m => {
-    const diff = Math.abs(hour - m)
-    if (diff <= 1 || diff >= 23) overall += 0.3
-    else if (diff <= 2 || diff >= 22) overall += 0.15
-  })
-
-  // Minor period boost
-  minor.forEach(m => {
-    const diff = Math.abs(hour - m)
-    if (diff <= 0.5) overall += 0.15
-    else if (diff <= 1) overall += 0.08
-  })
-
-  return {
-    major,
-    minor,
-    overall: Math.min(1, overall)
-  }
-}
 
 // Pressure graph component
 interface PressureDataPoint {
@@ -287,17 +288,17 @@ function PressureGraph({ data, onClose }: { data: PressureDataPoint[]; onClose: 
   )
 }
 
-// Solunar modal with detailed info
-function SolunarModal({ onClose }: { onClose: () => void }) {
+// Maanstand modal - vooral relevant voor zeevissen
+function MaanstandModal({ onClose }: { onClose: () => void }) {
   const now = new Date()
   const moonPhase = getMoonPhase(now)
-  const solunar = getSolunarActivity(now)
+  const maanTijden = getMaanTijden(now)
 
   // Generate 24-hour activity forecast
   const hourlyActivity = Array.from({ length: 24 }, (_, i) => {
     const hour = new Date(now)
     hour.setHours(i, 0, 0, 0)
-    return { hour: i, activity: getSolunarActivity(hour).overall }
+    return { hour: i, activity: getMaanTijden(hour).activiteit }
   })
 
   const getMoonPhaseName = (phase: number) => {
@@ -311,7 +312,26 @@ function SolunarModal({ onClose }: { onClose: () => void }) {
     return 'Afnemende sikkel'
   }
 
+  // Get tide type based on moon phase
+  const getGetijType = (phase: number) => {
+    // Spring tide around new and full moon
+    if (phase < 0.1 || phase > 0.9 || (phase > 0.4 && phase < 0.6)) {
+      return { type: 'Springtij', desc: 'Sterke stroming, actieve vis', color: 'text-green-600', bg: 'bg-green-50' }
+    }
+    // Neap tide around quarters
+    if ((phase > 0.2 && phase < 0.3) || (phase > 0.7 && phase < 0.8)) {
+      return { type: 'Doodtij', desc: 'Zwakke stroming, minder activiteit', color: 'text-orange-600', bg: 'bg-orange-50' }
+    }
+    return { type: 'Normaal getij', desc: 'Gemiddelde stroming', color: 'text-blue-600', bg: 'bg-blue-50' }
+  }
+
+  const getij = getGetijType(moonPhase)
   const formatHour = (h: number) => `${h.toString().padStart(2, '0')}:00`
+
+  // Find best and worst times
+  const sortedHours = [...hourlyActivity].sort((a, b) => b.activity - a.activity)
+  const besteTijden = sortedHours.slice(0, 4).map(h => h.hour).sort((a, b) => a - b)
+  const slechteTijden = sortedHours.slice(-4).map(h => h.hour).sort((a, b) => a - b)
 
   return (
     <motion.div
@@ -330,37 +350,51 @@ function SolunarModal({ onClose }: { onClose: () => void }) {
       >
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-gray-800 flex items-center gap-2">
-            <Moon size={18} className="text-blue-500" />
-            Solunar Activiteit
+            <Moon size={18} className="text-indigo-500" />
+            Maanstand & Getij
           </h3>
           <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg transition-colors border-0 outline-none bg-transparent">
             <X size={18} className="text-gray-500" />
           </button>
         </div>
 
-        {/* Moon phase */}
-        <div className="flex items-center gap-3 mb-4 p-3 bg-gray-50 rounded-lg">
-          <MoonPhase phase={moonPhase} size={40} />
+        {/* Moon phase with large realistic moon */}
+        <div className="flex items-center gap-4 mb-4 p-4 bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl">
+          <MoonPhase phase={moonPhase} size={60} />
           <div>
-            <div className="font-medium text-gray-800">{getMoonPhaseName(moonPhase)}</div>
-            <div className="text-xs text-gray-500">{Math.round(moonPhase * 100)}% cyclus</div>
+            <div className="font-medium text-white text-lg">{getMoonPhaseName(moonPhase)}</div>
+            <div className="text-sm text-slate-300">{Math.round(moonPhase * 100)}% verlicht</div>
           </div>
         </div>
 
-        {/* Best fishing periods */}
+        {/* Tide type indicator */}
+        <div className={`p-3 rounded-lg mb-4 ${getij.bg}`}>
+          <div className={`font-medium ${getij.color}`}>{getij.type}</div>
+          <div className="text-sm text-gray-600">{getij.desc}</div>
+        </div>
+
+        {/* Best fishing periods for sea fishing */}
         <div className="mb-4">
-          <div className="text-xs font-medium text-gray-600 mb-2">Beste tijden vandaag</div>
+          <div className="text-xs font-medium text-gray-600 mb-2 flex items-center gap-1">
+            🎣 Zeevissen - beste en slechtste tijden
+          </div>
           <div className="grid grid-cols-2 gap-2">
-            <div className="bg-green-50 p-2 rounded-lg">
-              <div className="text-xs text-green-600 font-medium">Major periodes</div>
-              <div className="text-sm text-green-800">
-                {solunar.major.map(h => formatHour(h)).join(', ')}
+            <div className="bg-green-50 border border-green-200 p-3 rounded-lg">
+              <div className="text-xs text-green-700 font-medium mb-1">Beste tijden</div>
+              <div className="text-sm text-green-800 font-medium">
+                {besteTijden.map(h => formatHour(h)).join(', ')}
+              </div>
+              <div className="text-[10px] text-green-600 mt-1">
+                Maan hoog/laag
               </div>
             </div>
-            <div className="bg-amber-50 p-2 rounded-lg">
-              <div className="text-xs text-amber-600 font-medium">Minor periodes</div>
-              <div className="text-sm text-amber-800">
-                {solunar.minor.map(h => formatHour(h)).join(', ')}
+            <div className="bg-red-50 border border-red-200 p-3 rounded-lg">
+              <div className="text-xs text-red-700 font-medium mb-1">Slechtste tijden</div>
+              <div className="text-sm text-red-800 font-medium">
+                {slechteTijden.map(h => formatHour(h)).join(', ')}
+              </div>
+              <div className="text-[10px] text-red-600 mt-1">
+                Maan tussen standen
               </div>
             </div>
           </div>
@@ -368,8 +402,8 @@ function SolunarModal({ onClose }: { onClose: () => void }) {
 
         {/* 24-hour activity chart */}
         <div className="mb-3">
-          <div className="text-xs font-medium text-gray-600 mb-2">Activiteit per uur</div>
-          <div className="flex items-end gap-0.5 h-16">
+          <div className="text-xs font-medium text-gray-600 mb-2">Visactiviteit per uur</div>
+          <div className="flex items-end gap-0.5 h-16 bg-gray-50 rounded-lg p-1">
             {hourlyActivity.map(({ hour, activity }) => (
               <div
                 key={hour}
@@ -377,7 +411,7 @@ function SolunarModal({ onClose }: { onClose: () => void }) {
                   activity >= 0.7 ? 'bg-green-500' :
                   activity >= 0.5 ? 'bg-lime-500' :
                   activity >= 0.3 ? 'bg-amber-500' : 'bg-red-400'
-                } ${hour === now.getHours() ? 'ring-2 ring-blue-500' : ''}`}
+                } ${hour === now.getHours() ? 'ring-2 ring-blue-500 ring-offset-1' : ''}`}
                 style={{ height: `${activity * 100}%` }}
                 title={`${formatHour(hour)}: ${Math.round(activity * 100)}%`}
               />
@@ -392,12 +426,57 @@ function SolunarModal({ onClose }: { onClose: () => void }) {
           </div>
         </div>
 
-        <div className="text-xs text-gray-500 text-center">
-          Gebaseerd op maanfase en -positie
+        <div className="text-xs text-gray-400 text-center bg-amber-50 p-2 rounded-lg">
+          ⚠️ Maanstand is vooral relevant voor <strong>zeevissen</strong>.<br/>
+          Bij zoetwater speelt dit minder een rol.
         </div>
       </motion.div>
     </motion.div>
   )
+}
+
+// Get moon-based fishing times (replaces getSolunarActivity)
+function getMaanTijden(date: Date): { besteTijden: number[]; slechteTijden: number[]; activiteit: number } {
+  const moonPhase = getMoonPhase(date)
+  const hour = date.getHours()
+
+  // Moon transit times (simplified)
+  const maanHoogste = Math.floor((moonPhase * 24 + 12) % 24)
+  const maanOpkomst = (maanHoogste + 6) % 24
+  const maanOndergang = (maanHoogste + 18) % 24
+  const maanLaagste = (maanHoogste + 12) % 24
+
+  // Best times: when moon is highest or lowest (strongest tidal pull)
+  const besteTijden = [maanHoogste, maanLaagste]
+  // Worst times: moonrise and moonset (transition periods)
+  const slechteTijden = [maanOpkomst, maanOndergang]
+
+  // Calculate activity for current hour
+  let activiteit = 0.3 // Base activity
+
+  // Spring tide boost (new moon or full moon)
+  if (moonPhase < 0.1 || moonPhase > 0.9 || (moonPhase > 0.4 && moonPhase < 0.6)) {
+    activiteit += 0.3
+  }
+
+  // Best time boost (moon highest/lowest)
+  besteTijden.forEach(t => {
+    const diff = Math.abs(hour - t)
+    if (diff <= 1 || diff >= 23) activiteit += 0.3
+    else if (diff <= 2 || diff >= 22) activiteit += 0.15
+  })
+
+  // Worst time penalty
+  slechteTijden.forEach(t => {
+    const diff = Math.abs(hour - t)
+    if (diff <= 1) activiteit -= 0.1
+  })
+
+  return {
+    besteTijden,
+    slechteTijden,
+    activiteit: Math.max(0.1, Math.min(1, activiteit))
+  }
 }
 
 export function WeatherWidget() {
@@ -405,7 +484,7 @@ export function WeatherWidget() {
   const position = useGPSStore(state => state.position)
   const showWeatherWidget = useSettingsStore(state => state.showWeatherWidget)
   const [showPressureGraph, setShowPressureGraph] = useState(false)
-  const [showSolunar, setShowSolunar] = useState(false)
+  const [showMaanstand, setShowMaanstand] = useState(false)
 
   const safeTopStyle = { top: 'max(0.5rem, env(safe-area-inset-top, 0.5rem))' }
 
@@ -434,12 +513,12 @@ export function WeatherWidget() {
   const condition = getFishingCondition()
   const score = getFishingScore ? getFishingScore() : (condition === 'excellent' ? 3 : condition === 'good' ? 2 : condition === 'moderate' ? 1 : 0)
 
-  // Solunar data
-  const solunar = getSolunarActivity(new Date())
+  // Maanstand data
+  const maanTijden = getMaanTijden(new Date())
   const moonPhase = getMoonPhase(new Date())
 
-  // Combined score (weather + solunar)
-  const combinedScore = Math.min(3, (score / 2) + (solunar.overall * 1.5))
+  // Combined score (weather + moon activity)
+  const combinedScore = Math.min(3, (score / 2) + (maanTijden.activiteit * 1.5))
 
   const conditionColors = {
     excellent: 'text-green-500',
@@ -483,17 +562,17 @@ export function WeatherWidget() {
             <div className="flex items-center justify-between pb-2 border-b border-gray-100">
               <FishScale value={combinedScore} color={getColorForScore(combinedScore)} />
               <button
-                onClick={() => setShowSolunar(true)}
+                onClick={() => setShowMaanstand(true)}
                 className="flex items-center gap-1 p-1 hover:bg-white/50 rounded transition-colors border-0 outline-none bg-transparent"
-                title="Solunar info"
+                title="Maanstand"
               >
                 <MoonPhase phase={moonPhase} size={16} />
                 <ChevronRight size={12} className="text-gray-400" />
               </button>
             </div>
 
-            {/* Solunar activity mini bar */}
-            <SolunarBar activity={solunar.overall} label="Activiteit" />
+            {/* Activiteit bar */}
+            <ActiviteitBar activity={maanTijden.activiteit} label="Activiteit" />
 
             {/* Temperature */}
             <div className="flex items-center gap-2 text-sm">
@@ -535,8 +614,8 @@ export function WeatherWidget() {
       </AnimatePresence>
 
       <AnimatePresence>
-        {showSolunar && (
-          <SolunarModal onClose={() => setShowSolunar(false)} />
+        {showMaanstand && (
+          <MaanstandModal onClose={() => setShowMaanstand(false)} />
         )}
       </AnimatePresence>
     </>
