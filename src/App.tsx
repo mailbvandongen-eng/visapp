@@ -13,6 +13,7 @@ import { WeatherWidget } from './components/Weather/WeatherWidget'
 import { WindIndicator } from './components/Weather/WindIndicator'
 import { TideWidget } from './components/Weather/TideWidget'
 import { ForecastSlider } from './components/Weather/ForecastSlider'
+import { WaterDataWidget } from './components/Weather/WaterDataWidget'
 import { AddCatchButton } from './components/Catch/AddCatchButton'
 import { CatchMarkers } from './components/Catch/CatchMarkers'
 import { SpotMarkers } from './components/Spots/SpotMarkers'
@@ -41,6 +42,7 @@ function App() {
         <WindIndicator />
         <TideWidget />
         <ForecastSlider />
+        <WaterDataWidget />
         <SearchBox />
         <HamburgerMenu />
 

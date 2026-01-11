@@ -16,6 +16,7 @@ interface SettingsState {
   showWindIndicator: boolean
   showTideWidget: boolean
   showForecastSlider: boolean
+  showWaterDataWidget: boolean
 
   setDefaultBackground: (bg: DefaultBackground) => void
   setShowScaleBar: (value: boolean) => void
@@ -29,6 +30,7 @@ interface SettingsState {
   setShowWindIndicator: (value: boolean) => void
   setShowTideWidget: (value: boolean) => void
   setShowForecastSlider: (value: boolean) => void
+  setShowWaterDataWidget: (value: boolean) => void
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -46,6 +48,7 @@ export const useSettingsStore = create<SettingsState>()(
       showWindIndicator: true,
       showTideWidget: true,
       showForecastSlider: true,
+      showWaterDataWidget: true,
 
       setDefaultBackground: (defaultBackground) => set({ defaultBackground }),
       setShowScaleBar: (showScaleBar) => set({ showScaleBar }),
@@ -58,7 +61,8 @@ export const useSettingsStore = create<SettingsState>()(
       setShowWeatherWidget: (showWeatherWidget) => set({ showWeatherWidget }),
       setShowWindIndicator: (showWindIndicator) => set({ showWindIndicator }),
       setShowTideWidget: (showTideWidget) => set({ showTideWidget }),
-      setShowForecastSlider: (showForecastSlider) => set({ showForecastSlider })
+      setShowForecastSlider: (showForecastSlider) => set({ showForecastSlider }),
+      setShowWaterDataWidget: (showWaterDataWidget) => set({ showWaterDataWidget })
     }),
     {
       name: 'visapp-settings'

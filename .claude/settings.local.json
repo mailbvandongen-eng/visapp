@@ -28,7 +28,10 @@
       "Bash(git commit:*)",
       "Bash(npm version:*)",
       "WebSearch",
-      "WebFetch(domain:windy.app)"
+      "WebFetch(domain:windy.app)",
+      "WebFetch(domain:waterinfo.rws.nl)",
+      "WebFetch(domain:rijkswaterstaatdata.nl)",
+      "WebFetch(domain:github.com)"
     ]
   }
 }

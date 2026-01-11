@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { X, Fish, MapPin, Map, Cloud, Wind, Waves, Clock } from 'lucide-react'
+import { X, Fish, MapPin, Map, Cloud, Wind, Waves, Clock, Droplets } from 'lucide-react'
 import { useUIStore, useSettingsStore } from '../../store'
 
 export function SettingsPanel() {
@@ -22,6 +22,8 @@ export function SettingsPanel() {
   const setShowTideWidget = useSettingsStore(state => state.setShowTideWidget)
   const showForecastSlider = useSettingsStore(state => state.showForecastSlider)
   const setShowForecastSlider = useSettingsStore(state => state.setShowForecastSlider)
+  const showWaterDataWidget = useSettingsStore(state => state.showWaterDataWidget)
+  const setShowWaterDataWidget = useSettingsStore(state => state.setShowWaterDataWidget)
 
   if (!settingsPanelOpen) return null
 
@@ -143,6 +145,14 @@ export function SettingsPanel() {
               description="Tijdslider met 72 uur forecast"
               checked={showForecastSlider}
               onChange={setShowForecastSlider}
+            />
+
+            <ToggleItem
+              icon={<Droplets size={18} className="text-cyan-500" />}
+              label="Waterdata (RWS)"
+              description="Temperatuur, golven, stroming"
+              checked={showWaterDataWidget}
+              onChange={setShowWaterDataWidget}
             />
           </div>
         </div>
