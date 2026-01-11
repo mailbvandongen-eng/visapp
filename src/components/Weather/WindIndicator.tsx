@@ -1,11 +1,15 @@
 import { motion } from 'framer-motion'
 import { useWeatherStore, useSettingsStore } from '../../store'
 
-export function WindIndicator() {
+interface WindIndicatorProps {
+  embedded?: boolean
+}
+
+export function WindIndicator({ embedded = false }: WindIndicatorProps) {
   const current = useWeatherStore(state => state.current)
   const showWindIndicator = useSettingsStore(state => state.showWindIndicator)
 
-  if (!showWindIndicator || !current) return null
+  if ((!showWindIndicator && !embedded) || !current) return null
 
   const windSpeed = Math.round(current.windSpeed)
   const windDirection = current.windDirection
@@ -30,7 +34,7 @@ export function WindIndicator() {
 
   return (
     <motion.div
-      className="fixed top-32 right-2 z-[700] bg-white/90 backdrop-blur-sm rounded-xl shadow-sm p-2"
+      className={`${embedded ? '' : 'fixed top-14 right-2 z-[700]'} bg-white/90 backdrop-blur-sm rounded-xl shadow-sm p-2`}
       initial={{ opacity: 0, scale: 0.8 }}
       animate={{ opacity: 1, scale: 1 }}
     >

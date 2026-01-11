@@ -120,7 +120,11 @@ function getWaterLevelAtTime(time: Date, tides: TideData[]): number {
   return prevTide.height + (nextTide.height - prevTide.height) * cosineProgress
 }
 
-export function TideWidget() {
+interface TideWidgetProps {
+  embedded?: boolean
+}
+
+export function TideWidget({ embedded = false }: TideWidgetProps) {
   const [showModal, setShowModal] = useState(false)
   const [selectedStation, setSelectedStation] = useState<TideStation>(TIDE_STATIONS[5]) // Scheveningen default
   const [selectedTime, setSelectedTime] = useState(new Date())
@@ -165,7 +169,7 @@ export function TideWidget() {
     return () => clearInterval(interval)
   }, [isPlaying])
 
-  if (!showTideWidget) return null
+  if (!showTideWidget && !embedded) return null
 
   const now = new Date()
   const currentLevel = getWaterLevelAtTime(now, tideData)
@@ -210,7 +214,7 @@ export function TideWidget() {
     <>
       {/* Compact button */}
       <motion.button
-        className="fixed top-48 right-2 z-[700] bg-white/90 backdrop-blur-sm rounded-xl shadow-sm p-2 flex items-center gap-2 border-0 outline-none"
+        className={`${embedded ? '' : 'fixed top-28 right-2 z-[700]'} bg-white/90 backdrop-blur-sm rounded-xl shadow-sm p-2 flex items-center gap-2 border-0 outline-none`}
         onClick={() => setShowModal(true)}
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}

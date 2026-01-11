@@ -5,7 +5,11 @@ import { useWaterDataStore } from '../../store/waterDataStore'
 import { useGPSStore, useSettingsStore } from '../../store'
 import { RWS_STATIONS } from '../../services/rwsService'
 
-export function WaterDataWidget() {
+interface WaterDataWidgetProps {
+  embedded?: boolean
+}
+
+export function WaterDataWidget({ embedded = false }: WaterDataWidgetProps) {
   const [showModal, setShowModal] = useState(false)
   const {
     station,
@@ -33,7 +37,7 @@ export function WaterDataWidget() {
     return () => clearInterval(interval)
   }, [fetchData, station])
 
-  if (!showWaterDataWidget) return null
+  if (!showWaterDataWidget && !embedded) return null
 
   // Temperature color based on value
   const getTempColor = (temp: number) => {
@@ -64,7 +68,7 @@ export function WaterDataWidget() {
     <>
       {/* Compact button */}
       <motion.button
-        className="fixed top-72 right-2 z-[700] bg-white/90 backdrop-blur-sm rounded-xl shadow-sm p-2 flex items-center gap-2 border-0 outline-none"
+        className={`${embedded ? '' : 'fixed top-52 right-2 z-[700]'} bg-white/90 backdrop-blur-sm rounded-xl shadow-sm p-2 flex items-center gap-2 border-0 outline-none`}
         onClick={() => setShowModal(true)}
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
