@@ -1,21 +1,19 @@
 import { useState, useRef } from 'react'
 import { motion, AnimatePresence, Reorder } from 'framer-motion'
 import { GripVertical } from 'lucide-react'
-import { useSettingsStore } from '../../store'
+import { useSettingsStore, WidgetId } from '../../store'
 import { WindIndicator } from './WindIndicator'
 import { TideWidget } from './TideWidget'
 import { ForecastSlider } from './ForecastSlider'
 import { WaterDataWidget } from './WaterDataWidget'
-
-type WidgetId = 'wind' | 'tide' | 'forecast' | 'waterData'
 
 export function WidgetStack() {
   const showWindIndicator = useSettingsStore(state => state.showWindIndicator)
   const showTideWidget = useSettingsStore(state => state.showTideWidget)
   const showForecastSlider = useSettingsStore(state => state.showForecastSlider)
   const showWaterDataWidget = useSettingsStore(state => state.showWaterDataWidget)
-
-  const [widgetOrder, setWidgetOrder] = useState<WidgetId[]>(['wind', 'tide', 'forecast', 'waterData'])
+  const widgetOrder = useSettingsStore(state => state.widgetOrder)
+  const setWidgetOrder = useSettingsStore(state => state.setWidgetOrder)
   const [isDragging, setIsDragging] = useState(false)
   const longPressTimer = useRef<NodeJS.Timeout | null>(null)
 

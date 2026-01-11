@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
 export type DefaultBackground = 'OpenStreetMap' | 'Luchtfoto'
+export type WidgetId = 'wind' | 'tide' | 'forecast' | 'waterData'
 
 interface SettingsState {
   defaultBackground: DefaultBackground
@@ -17,6 +18,7 @@ interface SettingsState {
   showTideWidget: boolean
   showForecastSlider: boolean
   showWaterDataWidget: boolean
+  widgetOrder: WidgetId[]
 
   setDefaultBackground: (bg: DefaultBackground) => void
   setShowScaleBar: (value: boolean) => void
@@ -31,6 +33,7 @@ interface SettingsState {
   setShowTideWidget: (value: boolean) => void
   setShowForecastSlider: (value: boolean) => void
   setShowWaterDataWidget: (value: boolean) => void
+  setWidgetOrder: (order: WidgetId[]) => void
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -49,6 +52,7 @@ export const useSettingsStore = create<SettingsState>()(
       showTideWidget: false,
       showForecastSlider: false,
       showWaterDataWidget: false,
+      widgetOrder: ['wind', 'tide', 'forecast', 'waterData'],
 
       setDefaultBackground: (defaultBackground) => set({ defaultBackground }),
       setShowScaleBar: (showScaleBar) => set({ showScaleBar }),
@@ -62,7 +66,8 @@ export const useSettingsStore = create<SettingsState>()(
       setShowWindIndicator: (showWindIndicator) => set({ showWindIndicator }),
       setShowTideWidget: (showTideWidget) => set({ showTideWidget }),
       setShowForecastSlider: (showForecastSlider) => set({ showForecastSlider }),
-      setShowWaterDataWidget: (showWaterDataWidget) => set({ showWaterDataWidget })
+      setShowWaterDataWidget: (showWaterDataWidget) => set({ showWaterDataWidget }),
+      setWidgetOrder: (widgetOrder) => set({ widgetOrder })
     }),
     {
       name: 'visapp-settings'
