@@ -1689,8 +1689,10 @@ export function FishingWidget() {
                           e.stopPropagation()
                           const newStation = RWS_STATIONS.find(s => s.id === e.target.value)
                           if (newStation) {
-                            const { setStation } = useWaterDataStore.getState()
+                            const { setStation, fetchData } = useWaterDataStore.getState()
                             setStation(newStation)
+                            // Fetch new data for the selected station
+                            setTimeout(() => fetchData(), 50)
                           }
                         }}
                         className="flex-1 px-2 py-1 text-xs border border-gray-200 rounded-lg bg-white/80 outline-none focus:ring-1 focus:ring-cyan-400"
