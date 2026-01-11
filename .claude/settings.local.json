@@ -31,7 +31,9 @@
       "WebFetch(domain:windy.app)",
       "WebFetch(domain:waterinfo.rws.nl)",
       "WebFetch(domain:rijkswaterstaatdata.nl)",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:api.le-systeme-solaire.net)",
+      "Bash(curl:*)"
     ]
   }
 }

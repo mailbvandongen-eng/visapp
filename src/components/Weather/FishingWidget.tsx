@@ -150,10 +150,29 @@ function getMoonPhaseName(phase: number): string {
   return 'Afnemende sikkel'
 }
 
-// Realistic moon phase component
+// NASA Moon texture URL (public domain)
+const MOON_TEXTURE_URL = 'https://svs.gsfc.nasa.gov/vis/a000000/a004700/a004720/lroc_color_poles_1k.jpg'
+
+// Realistic moon phase component with actual moon texture
 function MoonPhase({ phase, size = 20 }: { phase: number; size?: number }) {
-  const shadowOffset = phase < 0.5 ? (0.5 - phase) * 2 : (phase - 0.5) * 2
+  // Calculate illumination - phase 0 = new moon, 0.5 = full moon
+  // For Northern Hemisphere: waxing = right side lit first, waning = left side lit
+  const illumination = phase <= 0.5 ? phase * 2 : (1 - phase) * 2 // 0 to 1 to 0
   const isWaxing = phase < 0.5
+
+  // The terminator position (-1 = fully dark, 0 = half, 1 = fully lit)
+  // At new moon (phase 0): terminator at right edge, moving left
+  // At full moon (phase 0.5): fully illuminated
+  // At last quarter going to new: terminator moving right
+  let terminatorX: number
+  if (phase <= 0.5) {
+    // Waxing: light comes from right, terminator moves from right to left
+    terminatorX = 1 - (phase * 4) // 1 -> -1
+  } else {
+    // Waning: light still from right, but shadow comes from right
+    terminatorX = (phase - 0.5) * 4 - 1 // -1 -> 1
+  }
+  terminatorX = Math.max(-1, Math.min(1, terminatorX))
 
   return (
     <div
@@ -161,24 +180,83 @@ function MoonPhase({ phase, size = 20 }: { phase: number; size?: number }) {
       style={{
         width: size,
         height: size,
-        background: 'linear-gradient(145deg, #f5f5dc 0%, #e8e4c9 50%, #d4d0b8 100%)',
-        boxShadow: `inset 0 0 ${size * 0.1}px rgba(0,0,0,0.1), 0 ${size * 0.05}px ${size * 0.1}px rgba(0,0,0,0.2)`
+        boxShadow: `0 ${size * 0.05}px ${size * 0.15}px rgba(0,0,0,0.4)`
       }}
     >
-      <div
-        className="absolute inset-0 rounded-full opacity-30"
-        style={{
-          background: `radial-gradient(circle at 30% 30%, transparent 0%, rgba(139,119,101,0.3) 100%)`
-        }}
-      />
+      {/* Moon texture */}
       <div
         className="absolute inset-0 rounded-full"
         style={{
-          background: isWaxing
-            ? `linear-gradient(to left, transparent ${(1 - shadowOffset) * 100}%, rgba(20,20,30,0.95) ${(1 - shadowOffset) * 100 + 15}%)`
-            : `linear-gradient(to right, transparent ${(1 - shadowOffset) * 100}%, rgba(20,20,30,0.95) ${(1 - shadowOffset) * 100 + 15}%)`,
+          backgroundImage: `url(${MOON_TEXTURE_URL})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          filter: 'contrast(1.1) brightness(1.05)'
         }}
       />
+
+      {/* Fallback gradient if image doesn't load */}
+      <div
+        className="absolute inset-0 rounded-full"
+        style={{
+          background: `
+            radial-gradient(circle at 30% 25%, rgba(200,200,190,0.4) 0%, transparent 25%),
+            radial-gradient(circle at 70% 60%, rgba(180,180,170,0.3) 0%, transparent 20%),
+            radial-gradient(circle at 45% 75%, rgba(160,160,150,0.3) 0%, transparent 15%),
+            radial-gradient(circle at 60% 30%, rgba(170,170,160,0.25) 0%, transparent 18%),
+            radial-gradient(circle at 25% 55%, rgba(190,190,180,0.2) 0%, transparent 12%),
+            linear-gradient(135deg, #d4d4c8 0%, #a8a89c 50%, #8c8c80 100%)
+          `,
+          mixBlendMode: 'overlay'
+        }}
+      />
+
+      {/* Shadow overlay for phase - using SVG for accurate terminator */}
+      <svg
+        className="absolute inset-0"
+        viewBox="0 0 100 100"
+        style={{ width: size, height: size }}
+      >
+        <defs>
+          {/* Gradient for soft terminator edge */}
+          <linearGradient id={`moonShadow-${size}`} x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="rgba(5,5,15,0.97)" />
+            <stop offset="40%" stopColor="rgba(5,5,15,0.95)" />
+            <stop offset="100%" stopColor="rgba(5,5,15,0)" />
+          </linearGradient>
+        </defs>
+
+        {phase < 0.03 || phase > 0.97 ? (
+          // New moon - almost completely dark
+          <circle cx="50" cy="50" r="50" fill="rgba(5,5,15,0.95)" />
+        ) : phase > 0.47 && phase < 0.53 ? (
+          // Full moon - no shadow
+          null
+        ) : (
+          // Partial phase - elliptical terminator
+          <ellipse
+            cx={isWaxing ? 50 + terminatorX * 50 : 50 + terminatorX * 50}
+            cy="50"
+            rx={Math.abs(50 * (1 - Math.abs(terminatorX * 0.8)))}
+            ry="50"
+            fill="rgba(5,5,15,0.95)"
+            style={{
+              transform: isWaxing ? 'none' : 'none'
+            }}
+          />
+        )}
+      </svg>
+
+      {/* Atmospheric glow on lit edge */}
+      {illumination > 0.1 && (
+        <div
+          className="absolute inset-0 rounded-full pointer-events-none"
+          style={{
+            background: isWaxing
+              ? `radial-gradient(circle at ${85 - terminatorX * 20}% 50%, rgba(255,255,240,0.15) 0%, transparent 50%)`
+              : `radial-gradient(circle at ${15 - terminatorX * 20}% 50%, rgba(255,255,240,0.15) 0%, transparent 50%)`
+          }}
+        />
+      )}
     </div>
   )
 }
