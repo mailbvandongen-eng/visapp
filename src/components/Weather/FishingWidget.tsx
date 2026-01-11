@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import { useWeatherStore, useGPSStore, useSettingsStore } from '../../store'
 import { useWaterDataStore } from '../../store/waterDataStore'
+import { RWS_STATIONS } from '../../services/rwsService'
 
 // Default location: center of Netherlands
 const DEFAULT_LOCATION = { lat: 52.1326, lng: 5.2913 }
@@ -391,57 +392,41 @@ function HourlyForecast({ hourly }: { hourly: HourlyData[] }) {
   )
 }
 
-// Extended Precipitation Modal with 48-hour forecast
+// Extended Precipitation Modal with 48-hour forecast - Clean design
 function PrecipitationModal({ hourlyData, onClose }: { hourlyData: { time: string; precipitation: number; precipitationProbability: number }[]; onClose: () => void }) {
   const [selectedTime, setSelectedTime] = useState(new Date())
 
   const now = new Date()
-  const minTime = new Date(now)
-  minTime.setHours(now.getHours(), 0, 0, 0)
-  const maxTime = new Date(minTime)
-  maxTime.setHours(maxTime.getHours() + 48)
+  const minTime = useMemo(() => { const t = new Date(now); t.setHours(t.getHours(), 0, 0, 0); return t }, [])
+  const maxTime = useMemo(() => { const t = new Date(minTime); t.setHours(t.getHours() + 48); return t }, [minTime])
 
   const timeRange = maxTime.getTime() - minTime.getTime()
   const sliderValue = ((selectedTime.getTime() - minTime.getTime()) / timeRange) * 100
 
-  // Filter hourly data for next 48 hours
   const forecast48h = hourlyData.filter(h => {
     const t = new Date(h.time)
     return t >= minTime && t <= maxTime
   })
 
-  const handleSliderChange = (value: number) => {
-    const newTime = new Date(minTime.getTime() + (value / 100) * timeRange)
-    setSelectedTime(newTime)
-  }
-
   const formatDate = (date: Date) => {
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    const dateDay = new Date(date)
-    dateDay.setHours(0, 0, 0, 0)
+    const today = new Date(); today.setHours(0, 0, 0, 0)
+    const dateDay = new Date(date); dateDay.setHours(0, 0, 0, 0)
     const diff = Math.floor((dateDay.getTime() - today.getTime()) / (24 * 60 * 60 * 1000))
-
     if (diff === 0) return 'Vandaag'
     if (diff === 1) return 'Morgen'
+    if (diff === 2) return 'Overmorgen'
     return date.toLocaleDateString('nl-NL', { weekday: 'short', day: 'numeric' })
   }
 
   const formatHour = (date: Date) => `${date.getHours().toString().padStart(2, '0')}:00`
 
-  // Find data at selected time
   const selectedData = forecast48h.find(h => {
     const t = new Date(h.time)
-    return t.getHours() === selectedTime.getHours() &&
-           t.getDate() === selectedTime.getDate()
+    return t.getHours() === selectedTime.getHours() && t.getDate() === selectedTime.getDate()
   })
 
-  // Graph dimensions
-  const graphWidth = 320
-  const graphHeight = 100
-  const barWidth = graphWidth / forecast48h.length
-
   const maxPrecip = Math.max(...forecast48h.map(h => h.precipitation), 1)
+  const hasRain = forecast48h.some(h => h.precipitation > 0)
 
   return (
     <motion.div
@@ -452,151 +437,85 @@ function PrecipitationModal({ hourlyData, onClose }: { hourlyData: { time: strin
       onClick={onClose}
     >
       <motion.div
-        className="bg-white rounded-xl shadow-xl w-full max-w-sm max-h-[90vh] overflow-hidden"
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.9, opacity: 0 }}
+        className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden select-none"
+        initial={{ scale: 0.9, opacity: 0, y: 20 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.9, opacity: 0, y: 20 }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-blue-500 to-blue-600">
-          <div className="flex items-center gap-2">
-            <CloudRain size={20} className="text-white" />
-            <span className="font-semibold text-white">Neerslag 48 uur</span>
+        <div className="p-4 space-y-3">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <CloudRain size={20} className="text-blue-500" />
+              <span className="font-semibold text-gray-800">Neerslag 48 uur</span>
+              {!hasRain && <span className="text-xs text-green-600 font-medium bg-green-50 px-2 py-0.5 rounded-full">Droog</span>}
+            </div>
+            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors border-0 outline-none bg-transparent">
+              <X size={16} className="text-gray-500" />
+            </button>
           </div>
-          <button onClick={onClose} className="p-1 hover:bg-white/20 rounded-lg transition-colors border-0 outline-none bg-transparent">
-            <X size={20} className="text-white" />
-          </button>
-        </div>
 
-        <div className="p-4 space-y-4">
-          {/* Selected time info */}
-          <div className="bg-blue-50 rounded-lg p-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-sm text-gray-500">{formatDate(selectedTime)}</div>
-                <div className="text-2xl font-bold text-blue-600">{formatHour(selectedTime)}</div>
+          {/* Selected info */}
+          <div className="bg-blue-50 rounded-xl p-3 flex items-center justify-between">
+            <div>
+              <div className="text-xs text-gray-500">{formatDate(selectedTime)}</div>
+              <div className="text-xl font-bold text-blue-600">{formatHour(selectedTime)}</div>
+            </div>
+            <div className="text-right">
+              <div className="text-2xl font-bold text-blue-600">
+                {selectedData ? `${selectedData.precipitation.toFixed(1)} mm` : '0 mm'}
               </div>
-              <div className="text-right">
-                <div className="text-sm text-gray-500">Neerslag</div>
-                <div className="text-2xl font-bold text-blue-600">
-                  {selectedData ? `${selectedData.precipitation.toFixed(1)} mm` : '-'}
-                </div>
-                {selectedData && selectedData.precipitationProbability > 0 && (
-                  <div className="text-xs text-blue-500">{selectedData.precipitationProbability}% kans</div>
-                )}
-              </div>
+              {selectedData && selectedData.precipitationProbability > 0 && (
+                <div className="text-xs text-blue-500">{selectedData.precipitationProbability}% kans</div>
+              )}
             </div>
           </div>
 
-          {/* 48-hour bar graph */}
-          <div className="space-y-2">
-            <div className="text-xs text-gray-500">Neerslagverwachting</div>
-            <div className="relative bg-gray-100 rounded-lg p-2" style={{ height: graphHeight + 30 }}>
-              {/* Day separators */}
-              <div className="absolute inset-x-2 top-2 bottom-8 flex">
-                {forecast48h.map((h, i) => {
-                  const t = new Date(h.time)
-                  const showDayLine = t.getHours() === 0 && i > 0
-                  return showDayLine ? (
-                    <div key={i} className="absolute border-l border-gray-300" style={{ left: `${(i / forecast48h.length) * 100}%`, top: 0, bottom: 0 }}>
-                      <span className="absolute -top-0 left-1 text-[8px] text-gray-400">
-                        {formatDate(t)}
-                      </span>
-                    </div>
-                  ) : null
-                })}
-              </div>
-
-              {/* Bars */}
-              <div className="absolute inset-x-2 top-4 bottom-8 flex items-end">
-                {forecast48h.map((h, i) => {
-                  const height = (h.precipitation / maxPrecip) * 100
-                  const t = new Date(h.time)
-                  const isSelected = t.getHours() === selectedTime.getHours() && t.getDate() === selectedTime.getDate()
-                  const intensity = h.precipitation > 2 ? 'bg-blue-600' :
-                                   h.precipitation > 0.5 ? 'bg-blue-500' :
-                                   h.precipitation > 0 ? 'bg-blue-400' : 'bg-gray-200'
-                  return (
-                    <div
-                      key={i}
-                      className="flex-1 mx-px cursor-pointer"
-                      onClick={() => setSelectedTime(t)}
-                    >
-                      <div
-                        className={`w-full rounded-t transition-all ${intensity} ${isSelected ? 'ring-2 ring-amber-400' : ''}`}
-                        style={{ height: `${Math.max(height, h.precipitation > 0 ? 5 : 2)}%` }}
-                      />
-                    </div>
-                  )
-                })}
-              </div>
-
-              {/* Time labels */}
-              <div className="absolute bottom-1 left-2 right-2 flex justify-between text-[9px] text-gray-400">
-                <span>Nu</span>
-                <span>+12u</span>
-                <span>+24u</span>
-                <span>+36u</span>
-                <span>+48u</span>
-              </div>
-
-              {/* Now marker */}
-              <div className="absolute top-4 bottom-8 left-2 w-0.5 bg-amber-500" />
+          {/* Bar graph */}
+          <div className="relative bg-gray-100 rounded-xl p-2 h-24">
+            <div className="absolute inset-2 flex items-end gap-px">
+              {forecast48h.map((h, i) => {
+                const height = (h.precipitation / maxPrecip) * 100
+                const t = new Date(h.time)
+                const isSelected = t.getHours() === selectedTime.getHours() && t.getDate() === selectedTime.getDate()
+                const intensity = h.precipitation > 2 ? 'bg-blue-600' :
+                                 h.precipitation > 0.5 ? 'bg-blue-500' :
+                                 h.precipitation > 0 ? 'bg-blue-400' : 'bg-gray-200'
+                return (
+                  <div key={i} className="flex-1 cursor-pointer h-full flex flex-col justify-end" onClick={() => setSelectedTime(t)}>
+                    <div className={`w-full rounded-t transition-all ${intensity} ${isSelected ? 'ring-2 ring-amber-400 ring-offset-1' : ''}`}
+                      style={{ height: `${Math.max(height, h.precipitation > 0 ? 8 : 3)}%` }} />
+                  </div>
+                )
+              })}
+            </div>
+            <div className="absolute bottom-0.5 left-2 right-2 flex justify-between text-[8px] text-gray-400">
+              <span>Nu</span>
+              <span>+24u</span>
+              <span>+48u</span>
             </div>
           </div>
 
-          {/* Time slider */}
-          <div className="space-y-2">
-            <input
-              type="range"
-              min="0"
-              max="100"
-              value={sliderValue}
-              onChange={(e) => handleSliderChange(parseFloat(e.target.value))}
-              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-500"
-            />
-            <div className="flex justify-between text-xs text-gray-500">
-              <span>{formatDate(minTime)} {formatHour(minTime)}</span>
-              <span>{formatDate(maxTime)} {formatHour(maxTime)}</span>
-            </div>
-          </div>
+          {/* Slider */}
+          <input
+            type="range" min="0" max="100" value={sliderValue}
+            onChange={(e) => setSelectedTime(new Date(minTime.getTime() + (parseFloat(e.target.value) / 100) * timeRange))}
+            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-500"
+          />
 
-          {/* Quick navigation */}
+          {/* Quick buttons */}
           <div className="flex gap-2">
-            <button
-              onClick={() => setSelectedTime(new Date())}
-              className="flex-1 px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors border-0 outline-none"
-            >
-              Nu
-            </button>
-            <button
-              onClick={() => {
-                const tomorrow = new Date()
-                tomorrow.setDate(tomorrow.getDate() + 1)
-                tomorrow.setHours(8, 0, 0, 0)
-                setSelectedTime(tomorrow)
-              }}
-              className="flex-1 px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors border-0 outline-none"
-            >
-              Morgen 8:00
-            </button>
+            <button onClick={() => setSelectedTime(new Date())} className="flex-1 px-3 py-2 text-sm bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-xl transition-colors border-0 outline-none font-medium">Nu</button>
+            <button onClick={() => { const t = new Date(); t.setDate(t.getDate() + 1); t.setHours(8, 0, 0, 0); setSelectedTime(t) }} className="flex-1 px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors border-0 outline-none">Morgen 8:00</button>
+            <button onClick={() => { const t = new Date(); t.setDate(t.getDate() + 1); t.setHours(18, 0, 0, 0); setSelectedTime(t) }} className="flex-1 px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors border-0 outline-none">Morgen 18:00</button>
           </div>
 
           {/* Legend */}
-          <div className="flex items-center justify-center gap-4 text-[10px] text-gray-500">
-            <div className="flex items-center gap-1">
-              <div className="w-3 h-3 rounded-sm bg-blue-400" />
-              <span>Licht</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="w-3 h-3 rounded-sm bg-blue-500" />
-              <span>Matig</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="w-3 h-3 rounded-sm bg-blue-600" />
-              <span>Zwaar</span>
-            </div>
+          <div className="flex items-center justify-center gap-4 text-[10px] text-gray-400">
+            <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-sm bg-blue-400" /><span>Licht</span></div>
+            <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-sm bg-blue-500" /><span>Matig</span></div>
+            <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-sm bg-blue-600" /><span>Zwaar</span></div>
           </div>
         </div>
       </motion.div>
@@ -604,12 +523,125 @@ function PrecipitationModal({ hourlyData, onClose }: { hourlyData: { time: strin
   )
 }
 
-// Tide Modal (using existing TideWidget logic)
+// Moon Modal with slider
+function MoonModal({ onClose }: { onClose: () => void }) {
+  const [daysOffset, setDaysOffset] = useState(0)
+
+  const selectedDate = useMemo(() => {
+    const d = new Date()
+    d.setDate(d.getDate() + daysOffset)
+    return d
+  }, [daysOffset])
+
+  const moonPhase = getMoonPhase(selectedDate)
+
+  const formatDate = (days: number) => {
+    if (days === 0) return 'Vandaag'
+    if (days === 1) return 'Morgen'
+    if (days === -1) return 'Gisteren'
+    const d = new Date()
+    d.setDate(d.getDate() + days)
+    return d.toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' })
+  }
+
+  // Tide type
+  const tideType = getTideType(moonPhase)
+
+  return (
+    <motion.div
+      className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/50 p-4"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      onClick={onClose}
+    >
+      <motion.div
+        className="bg-gradient-to-b from-slate-800 to-slate-900 rounded-2xl shadow-2xl w-full max-w-xs overflow-hidden select-none"
+        initial={{ scale: 0.9, opacity: 0, y: 20 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.9, opacity: 0, y: 20 }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="p-5 space-y-4">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Moon size={18} className="text-slate-400" />
+              <span className="font-semibold text-white">Maanstand</span>
+            </div>
+            <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors border-0 outline-none bg-transparent">
+              <X size={16} className="text-slate-400" />
+            </button>
+          </div>
+
+          {/* Moon display */}
+          <div className="flex flex-col items-center py-4">
+            <MoonPhase phase={moonPhase} size={120} />
+            <div className="mt-4 text-center">
+              <div className="text-xl font-semibold text-white">{getMoonPhaseName(moonPhase)}</div>
+              <div className="text-slate-400 text-sm">{Math.round(moonPhase * 100)}% verlicht</div>
+              <div className={`text-sm font-medium mt-1 ${tideType.color}`}>{tideType.type}</div>
+            </div>
+          </div>
+
+          {/* Date display */}
+          <div className="text-center text-slate-300 text-sm">
+            {formatDate(daysOffset)}
+          </div>
+
+          {/* Slider */}
+          <div className="space-y-2">
+            <input
+              type="range"
+              min="-14"
+              max="14"
+              value={daysOffset}
+              onChange={(e) => setDaysOffset(parseInt(e.target.value))}
+              className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-400"
+            />
+            <div className="flex justify-between text-xs text-slate-500">
+              <span>-14 dagen</span>
+              <span>Nu</span>
+              <span>+14 dagen</span>
+            </div>
+          </div>
+
+          {/* Quick buttons */}
+          <div className="flex gap-2">
+            <button onClick={() => setDaysOffset(0)} className="flex-1 px-3 py-2 text-sm bg-slate-700 hover:bg-slate-600 text-white rounded-xl transition-colors border-0 outline-none">Vandaag</button>
+            <button onClick={() => {
+              // Find next new moon
+              for (let i = 1; i <= 30; i++) {
+                const d = new Date(); d.setDate(d.getDate() + i)
+                const p = getMoonPhase(d)
+                if (p < 0.03 || p > 0.97) { setDaysOffset(i); break }
+              }
+            }} className="flex-1 px-3 py-2 text-sm bg-slate-700 hover:bg-slate-600 text-white rounded-xl transition-colors border-0 outline-none">Nieuwe maan</button>
+            <button onClick={() => {
+              // Find next full moon
+              for (let i = 1; i <= 30; i++) {
+                const d = new Date(); d.setDate(d.getDate() + i)
+                const p = getMoonPhase(d)
+                if (p > 0.47 && p < 0.53) { setDaysOffset(i); break }
+              }
+            }} className="flex-1 px-3 py-2 text-sm bg-slate-700 hover:bg-slate-600 text-white rounded-xl transition-colors border-0 outline-none">Volle maan</button>
+          </div>
+
+          {/* Info */}
+          <div className="text-[10px] text-slate-500 text-center">
+            Springtij: nieuwe/volle maan (sterk getij)
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
+  )
+}
+
+// Tide Modal with nice graph
 function TideModal({ onClose }: { onClose: () => void }) {
   const [selectedTime, setSelectedTime] = useState(new Date())
   const position = useGPSStore(state => state.position)
 
-  // Tide stations
   const TIDE_STATIONS = [
     { id: 'HOEKVHLD', name: 'Hoek van Holland', lat: 51.9775, lng: 4.1200 },
     { id: 'IJMDMNTHVN', name: 'IJmuiden', lat: 52.4639, lng: 4.5556 },
@@ -624,10 +656,7 @@ function TideModal({ onClose }: { onClose: () => void }) {
     let minDist = Infinity
     for (const station of TIDE_STATIONS) {
       const dist = Math.sqrt(Math.pow(station.lat - lat, 2) + Math.pow(station.lng - lng, 2))
-      if (dist < minDist) {
-        minDist = dist
-        nearest = station
-      }
+      if (dist < minDist) { minDist = dist; nearest = station }
     }
     return nearest
   }
@@ -636,34 +665,28 @@ function TideModal({ onClose }: { onClose: () => void }) {
     position ? findNearestStation(position.lat, position.lng) : TIDE_STATIONS[5]
   )
 
-  // Calculate tides for 5 days
-  const tideData = useMemo(() => {
-    const startDate = new Date()
-    startDate.setDate(startDate.getDate() - 2)
-    startDate.setHours(0, 0, 0, 0)
-    return calculateTides(startDate, 5)
+  const now = new Date()
+  const minTime = useMemo(() => {
+    const t = new Date(); t.setDate(t.getDate() - 1); t.setHours(0, 0, 0, 0); return t
+  }, [])
+  const maxTime = useMemo(() => {
+    const t = new Date(); t.setDate(t.getDate() + 2); t.setHours(23, 59, 59, 999); return t
   }, [])
 
-  const now = new Date()
-  const minTime = new Date()
-  minTime.setDate(minTime.getDate() - 2)
-  minTime.setHours(0, 0, 0, 0)
-  const maxTime = new Date()
-  maxTime.setDate(maxTime.getDate() + 2)
-  maxTime.setHours(23, 59, 59, 999)
+  const tideData = useMemo(() => {
+    const startDate = new Date(minTime)
+    return calculateTides(startDate, 4)
+  }, [minTime])
 
   const timeRange = maxTime.getTime() - minTime.getTime()
   const sliderValue = ((selectedTime.getTime() - minTime.getTime()) / timeRange) * 100
 
   const getWaterLevelAtTime = (time: Date): number => {
     if (tideData.length < 2) return 1.0
-    let prevTide = tideData[0]
-    let nextTide = tideData[1]
+    let prevTide = tideData[0], nextTide = tideData[1]
     for (let i = 0; i < tideData.length - 1; i++) {
       if (tideData[i].time <= time && tideData[i + 1].time > time) {
-        prevTide = tideData[i]
-        nextTide = tideData[i + 1]
-        break
+        prevTide = tideData[i]; nextTide = tideData[i + 1]; break
       }
     }
     const totalDuration = nextTide.time.getTime() - prevTide.time.getTime()
@@ -673,9 +696,26 @@ function TideModal({ onClose }: { onClose: () => void }) {
     return prevTide.height + (nextTide.height - prevTide.height) * cosineProgress
   }
 
+  // Generate curve data points
+  const curvePoints = useMemo(() => {
+    const points: { x: number; y: number; time: Date }[] = []
+    const steps = 200
+    for (let i = 0; i <= steps; i++) {
+      const time = new Date(minTime.getTime() + (i / steps) * timeRange)
+      const level = getWaterLevelAtTime(time)
+      points.push({ x: (i / steps) * 100, y: level, time })
+    }
+    return points
+  }, [minTime, timeRange, tideData])
+
+  const minLevel = Math.min(...curvePoints.map(p => p.y))
+  const maxLevel = Math.max(...curvePoints.map(p => p.y))
+  const levelRange = maxLevel - minLevel || 1
+
   const formatDate = (date: Date) => {
-    const today = new Date()
-    const diff = Math.floor((date.getTime() - today.setHours(0,0,0,0)) / (24*60*60*1000))
+    const today = new Date(); today.setHours(0,0,0,0)
+    const dateDay = new Date(date); dateDay.setHours(0,0,0,0)
+    const diff = Math.floor((dateDay.getTime() - today.getTime()) / (24*60*60*1000))
     if (diff === 0) return 'Vandaag'
     if (diff === 1) return 'Morgen'
     if (diff === -1) return 'Gisteren'
@@ -683,6 +723,10 @@ function TideModal({ onClose }: { onClose: () => void }) {
   }
 
   const formatTime = (date: Date) => date.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })
+
+  const currentLevel = getWaterLevelAtTime(selectedTime)
+  const nowPosition = ((now.getTime() - minTime.getTime()) / timeRange) * 100
+  const selectedPosition = ((selectedTime.getTime() - minTime.getTime()) / timeRange) * 100
 
   return (
     <motion.div
@@ -693,106 +737,128 @@ function TideModal({ onClose }: { onClose: () => void }) {
       onClick={onClose}
     >
       <motion.div
-        className="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-hidden"
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.9, opacity: 0 }}
+        className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl w-full max-w-md overflow-hidden select-none"
+        initial={{ scale: 0.9, opacity: 0, y: 20 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.9, opacity: 0, y: 20 }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-blue-500 to-blue-600">
-          <div className="flex items-center gap-2">
-            <Waves size={20} className="text-white" />
-            <span className="font-semibold text-white">Getijden</span>
+        <div className="p-4 space-y-3">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Waves size={20} className="text-blue-500" />
+              <span className="font-semibold text-gray-800">Getijden</span>
+            </div>
+            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors border-0 outline-none bg-transparent">
+              <X size={16} className="text-gray-500" />
+            </button>
           </div>
-          <button onClick={onClose} className="p-1 hover:bg-white/20 rounded-lg transition-colors border-0 outline-none bg-transparent">
-            <X size={20} className="text-white" />
-          </button>
-        </div>
 
-        <div className="p-4 space-y-4">
+          {/* Station selector */}
           <select
             value={selectedStation.id}
             onChange={(e) => {
               const station = TIDE_STATIONS.find(s => s.id === e.target.value)
               if (station) setSelectedStation(station)
             }}
-            className="w-full p-2 border border-gray-200 rounded-lg text-sm bg-white"
+            className="w-full p-2.5 border border-gray-200 rounded-xl text-sm bg-white/80 outline-none focus:ring-2 focus:ring-blue-400"
           >
             {TIDE_STATIONS.map(station => (
               <option key={station.id} value={station.id}>{station.name}</option>
             ))}
           </select>
 
-          <div className="bg-blue-50 rounded-lg p-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-sm text-gray-500">{formatDate(selectedTime)}</div>
-                <div className="text-2xl font-bold text-blue-600">{formatTime(selectedTime)}</div>
-              </div>
-              <div className="text-right">
-                <div className="text-sm text-gray-500">Waterstand</div>
-                <div className="text-2xl font-bold text-blue-600">
-                  {getWaterLevelAtTime(selectedTime).toFixed(2)}m
-                </div>
-              </div>
+          {/* Tide Graph */}
+          <div className="relative bg-gradient-to-b from-blue-50 to-blue-100 rounded-xl p-3 h-32">
+            {/* SVG Curve */}
+            <svg className="absolute inset-3 w-[calc(100%-24px)] h-[calc(100%-24px)]" viewBox="0 0 100 100" preserveAspectRatio="none">
+              {/* Water fill */}
+              <path
+                d={`M 0 100 ${curvePoints.map(p => `L ${p.x} ${100 - ((p.y - minLevel) / levelRange) * 80}`).join(' ')} L 100 100 Z`}
+                fill="url(#waterGradient)"
+                opacity="0.6"
+              />
+              {/* Curve line */}
+              <path
+                d={`M ${curvePoints.map(p => `${p.x} ${100 - ((p.y - minLevel) / levelRange) * 80}`).join(' L ')}`}
+                fill="none"
+                stroke="#3b82f6"
+                strokeWidth="1.5"
+              />
+              {/* Now marker */}
+              {nowPosition >= 0 && nowPosition <= 100 && (
+                <line x1={nowPosition} y1="0" x2={nowPosition} y2="100" stroke="#f59e0b" strokeWidth="1" strokeDasharray="3,3" />
+              )}
+              {/* Selected marker */}
+              <line x1={selectedPosition} y1="0" x2={selectedPosition} y2="100" stroke="#ef4444" strokeWidth="1.5" />
+              <circle cx={selectedPosition} cy={100 - ((currentLevel - minLevel) / levelRange) * 80} r="3" fill="#ef4444" />
+              <defs>
+                <linearGradient id="waterGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="#3b82f6" />
+                  <stop offset="100%" stopColor="#93c5fd" />
+                </linearGradient>
+              </defs>
+            </svg>
+
+            {/* Time labels */}
+            <div className="absolute bottom-1 left-3 right-3 flex justify-between text-[9px] text-gray-500">
+              <span>{formatDate(minTime)}</span>
+              <span>{formatDate(now)}</span>
+              <span>{formatDate(maxTime)}</span>
+            </div>
+
+            {/* Level display */}
+            <div className="absolute top-2 right-3 bg-white/90 rounded-lg px-2 py-1 shadow-sm">
+              <div className="text-[10px] text-gray-500">{formatDate(selectedTime)} {formatTime(selectedTime)}</div>
+              <div className="text-lg font-bold text-blue-600">{currentLevel.toFixed(2)}m</div>
             </div>
           </div>
 
           {/* Time slider */}
-          <div className="space-y-2">
-            <input
-              type="range"
-              min="0"
-              max="100"
-              value={sliderValue}
-              onChange={(e) => {
-                const newTime = new Date(minTime.getTime() + (parseFloat(e.target.value) / 100) * timeRange)
-                setSelectedTime(newTime)
-              }}
-              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-500"
-            />
-            <div className="flex justify-between text-xs text-gray-500">
-              <span>{formatDate(minTime)}</span>
-              <button onClick={() => setSelectedTime(new Date())} className="text-blue-500 font-medium border-0 bg-transparent">Nu</button>
-              <span>{formatDate(maxTime)}</span>
-            </div>
+          <input
+            type="range"
+            min="0"
+            max="100"
+            value={sliderValue}
+            onChange={(e) => {
+              const newTime = new Date(minTime.getTime() + (parseFloat(e.target.value) / 100) * timeRange)
+              setSelectedTime(newTime)
+            }}
+            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-500"
+          />
+
+          {/* Quick buttons */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => setSelectedTime(new Date())}
+              className="flex-1 px-3 py-2 text-sm bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-xl transition-colors border-0 outline-none font-medium"
+            >
+              Nu
+            </button>
+            {tideData.filter(t => t.time > now).slice(0, 2).map((tide, i) => (
+              <button
+                key={i}
+                onClick={() => setSelectedTime(tide.time)}
+                className={`flex-1 px-2 py-2 text-sm rounded-xl transition-colors border-0 outline-none font-medium ${
+                  tide.type === 'high' ? 'bg-green-50 hover:bg-green-100 text-green-600' : 'bg-red-50 hover:bg-red-100 text-red-600'
+                }`}
+              >
+                {tide.type === 'high' ? 'HW' : 'LW'} {formatTime(tide.time)}
+              </button>
+            ))}
           </div>
 
-          {/* Next tides */}
-          <div className="border-t border-gray-100 pt-3">
-            <div className="text-xs text-gray-500 mb-2">Volgende getijden</div>
-            <div className="grid grid-cols-4 gap-2">
-              {tideData.filter(t => t.time > now).slice(0, 4).map((tide, i) => (
-                <button
-                  key={i}
-                  onClick={() => setSelectedTime(tide.time)}
-                  className={`p-2 rounded-lg text-center transition-colors border-0 outline-none ${
-                    tide.type === 'high' ? 'bg-green-50 hover:bg-green-100' : 'bg-red-50 hover:bg-red-100'
-                  }`}
-                >
-                  <div className={`text-[10px] font-medium ${tide.type === 'high' ? 'text-green-600' : 'text-red-600'}`}>
-                    {tide.type === 'high' ? 'HW' : 'LW'}
-                  </div>
-                  <div className="text-xs font-medium">{formatTime(tide.time)}</div>
-                  <div className="text-[10px] text-gray-500">{tide.height.toFixed(1)}m</div>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="text-xs text-gray-400 text-center">
-            Berekening gebaseerd op maanstand - Alleen ter indicatie
-          </div>
+          <div className="text-[10px] text-gray-400 text-center">Berekening op basis van maanstand</div>
         </div>
       </motion.div>
     </motion.div>
   )
 }
 
-// Water Data Modal
+// Water Data Modal - Clean design without blue header
 function WaterDataModal({ onClose }: { onClose: () => void }) {
   const { waterData, station, fetchData, setStation, isLoading } = useWaterDataStore()
-  const { RWS_STATIONS } = require('../../services/rwsService')
 
   const getTempColor = (temp: number) => {
     if (temp < 8) return 'text-blue-600'
@@ -818,105 +884,117 @@ function WaterDataModal({ onClose }: { onClose: () => void }) {
       onClick={onClose}
     >
       <motion.div
-        className="bg-white rounded-xl shadow-xl w-full max-w-sm max-h-[90vh] overflow-hidden"
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.9, opacity: 0 }}
+        className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden select-none"
+        initial={{ scale: 0.9, opacity: 0, y: 20 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.9, opacity: 0, y: 20 }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-cyan-500 to-blue-500">
-          <div className="flex items-center gap-2">
-            <Droplets size={20} className="text-white" />
-            <span className="font-semibold text-white">Waterdata</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <button onClick={() => fetchData()} className="p-1 hover:bg-white/20 rounded-lg transition-colors border-0 outline-none bg-transparent" disabled={isLoading}>
-              <RefreshCw size={18} className={`text-white ${isLoading ? 'animate-spin' : ''}`} />
-            </button>
-            <button onClick={onClose} className="p-1 hover:bg-white/20 rounded-lg transition-colors border-0 outline-none bg-transparent">
-              <X size={20} className="text-white" />
-            </button>
-          </div>
-        </div>
-
         <div className="p-4 space-y-4">
+          {/* Header row */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Droplets size={20} className="text-cyan-500" />
+              <span className="font-semibold text-gray-800">Waterdata</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => fetchData()}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors border-0 outline-none bg-transparent"
+                disabled={isLoading}
+              >
+                <RefreshCw size={16} className={`text-gray-500 ${isLoading ? 'animate-spin' : ''}`} />
+              </button>
+              <button
+                onClick={onClose}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors border-0 outline-none bg-transparent"
+              >
+                <X size={16} className="text-gray-500" />
+              </button>
+            </div>
+          </div>
+
+          {/* Station selector */}
           <select
             value={station?.id || ''}
             onChange={(e) => {
-              const newStation = RWS_STATIONS.find((s: any) => s.id === e.target.value)
+              const newStation = RWS_STATIONS.find(s => s.id === e.target.value)
               if (newStation) setStation(newStation)
             }}
-            className="w-full p-2 border border-gray-200 rounded-lg text-sm bg-white"
+            className="w-full p-2.5 border border-gray-200 rounded-xl text-sm bg-white/80 outline-none focus:ring-2 focus:ring-cyan-400"
           >
-            {RWS_STATIONS.map((s: any) => (
+            {RWS_STATIONS.map(s => (
               <option key={s.id} value={s.id}>{s.name}</option>
             ))}
           </select>
 
+          {/* Data cards */}
           <div className="grid grid-cols-2 gap-3">
-            <div className="bg-gradient-to-br from-cyan-50 to-blue-50 rounded-xl p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Thermometer size={18} className="text-cyan-500" />
-                <span className="text-xs text-gray-500">Watertemperatuur</span>
+            <div className="bg-gradient-to-br from-cyan-50 to-blue-50 rounded-xl p-3">
+              <div className="flex items-center gap-1.5 mb-1">
+                <Thermometer size={14} className="text-cyan-500" />
+                <span className="text-[10px] text-gray-500">Water</span>
               </div>
               {waterData?.temperature !== undefined ? (
                 <>
-                  <div className={`text-2xl font-bold ${getTempColor(waterData.temperature)}`}>
+                  <div className={`text-xl font-bold ${getTempColor(waterData.temperature)}`}>
                     {waterData.temperature.toFixed(1)}°C
                   </div>
-                  <div className="text-[10px] text-gray-400 mt-1">
-                    {waterData.temperature < 10 ? 'Koud - minder activiteit' :
-                     waterData.temperature < 15 ? 'Goed voor roofvis' : 'Warm - actieve vis'}
+                  <div className="text-[9px] text-gray-400 mt-0.5">
+                    {waterData.temperature < 10 ? 'Koud' : waterData.temperature < 15 ? 'Roofvis' : 'Warm'}
                   </div>
                 </>
-              ) : <div className="text-gray-400">-</div>}
+              ) : <div className="text-gray-400 text-lg">-</div>}
             </div>
 
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Waves size={18} className="text-blue-500" />
-                <span className="text-xs text-gray-500">Golfhoogte</span>
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-3">
+              <div className="flex items-center gap-1.5 mb-1">
+                <Waves size={14} className="text-blue-500" />
+                <span className="text-[10px] text-gray-500">Golven</span>
               </div>
               {waterData?.waveHeight !== undefined ? (
                 <>
-                  <div className="text-2xl font-bold text-blue-600">{waterData.waveHeight} cm</div>
-                  <div className="text-[10px] text-gray-400 mt-1">{getWaveLabel(waterData.waveHeight)}</div>
+                  <div className="text-xl font-bold text-blue-600">{waterData.waveHeight} cm</div>
+                  <div className="text-[9px] text-gray-400 mt-0.5">{getWaveLabel(waterData.waveHeight)}</div>
                 </>
-              ) : <div className="text-gray-400">-</div>}
+              ) : <div className="text-gray-400 text-lg">-</div>}
             </div>
 
-            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Navigation size={18} className="text-green-500" />
-                <span className="text-xs text-gray-500">Stroomsnelheid</span>
+            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-3">
+              <div className="flex items-center gap-1.5 mb-1">
+                <Navigation size={14} className="text-green-500" />
+                <span className="text-[10px] text-gray-500">Stroming</span>
               </div>
               {waterData?.currentSpeed !== undefined ? (
                 <>
-                  <div className="text-2xl font-bold text-green-600">{waterData.currentSpeed} cm/s</div>
-                  <div className="text-[10px] text-gray-400 mt-1">
+                  <div className="text-xl font-bold text-green-600">{waterData.currentSpeed} cm/s</div>
+                  <div className="text-[9px] text-gray-400 mt-0.5">
                     {waterData.currentSpeed < 20 ? 'Zwak' : waterData.currentSpeed < 50 ? 'Matig' : 'Sterk'}
                   </div>
                 </>
-              ) : <div className="text-gray-400">-</div>}
+              ) : <div className="text-gray-400 text-lg">-</div>}
             </div>
 
-            <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Navigation size={18} className="text-purple-500" />
-                <span className="text-xs text-gray-500">Stroomrichting</span>
+            <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-3">
+              <div className="flex items-center gap-1.5 mb-1">
+                <Navigation size={14} className="text-purple-500" />
+                <span className="text-[10px] text-gray-500">Richting</span>
               </div>
               {waterData?.currentDirection !== undefined ? (
                 <div className="flex items-center gap-2">
                   <div style={{ transform: `rotate(${waterData.currentDirection}deg)` }}>
-                    <Navigation size={24} className="text-purple-500" fill="currentColor" />
+                    <Navigation size={20} className="text-purple-500" fill="currentColor" />
                   </div>
                   <div className="text-lg font-bold text-purple-600">{Math.round(waterData.currentDirection)}°</div>
                 </div>
-              ) : <div className="text-gray-400">-</div>}
+              ) : <div className="text-gray-400 text-lg">-</div>}
             </div>
           </div>
 
-          <div className="text-xs text-gray-400 text-center">Bron: Rijkswaterstaat</div>
+          {/* Footer */}
+          <div className="text-[10px] text-gray-400 text-center pt-1">
+            Bron: Rijkswaterstaat
+          </div>
         </div>
       </motion.div>
     </motion.div>
@@ -933,6 +1011,7 @@ export function FishingWidget() {
   const [showTideModal, setShowTideModal] = useState(false)
   const [showWaterModal, setShowWaterModal] = useState(false)
   const [showPrecipModal, setShowPrecipModal] = useState(false)
+  const [showMoonModal, setShowMoonModal] = useState(false)
 
   const safeTopStyle = { top: 'max(0.5rem, env(safe-area-inset-top, 0.5rem))' }
 
@@ -1010,7 +1089,7 @@ export function FishingWidget() {
 
   return (
     <motion.div
-      className={`fixed left-2 z-[700] backdrop-blur-sm rounded-xl shadow-sm border transition-all ${getBgForScore(combinedScore)}`}
+      className={`fixed left-2 z-[700] backdrop-blur-sm rounded-xl shadow-sm border transition-all select-none ${getBgForScore(combinedScore)}`}
       style={safeTopStyle}
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
@@ -1089,15 +1168,19 @@ export function FishingWidget() {
                     {weatherCodeDescriptions[current.weatherCode] || 'Onbekend'}
                   </div>
 
-                  {/* Moon phase section */}
-                  <div className="bg-slate-800 rounded-lg p-3 flex items-center gap-3">
+                  {/* Moon phase section - clickable */}
+                  <button
+                    onClick={() => setShowMoonModal(true)}
+                    className="w-full bg-slate-800 hover:bg-slate-700 rounded-lg p-3 flex items-center gap-3 border-0 outline-none cursor-pointer transition-colors"
+                  >
                     <MoonPhase phase={moonPhase} size={36} />
-                    <div className="flex-1">
+                    <div className="flex-1 text-left">
                       <div className="text-white text-sm font-medium">{getMoonPhaseName(moonPhase)}</div>
                       <div className="text-slate-400 text-[10px]">{Math.round(moonPhase * 100)}% verlicht</div>
                       <div className={`text-[10px] font-medium ${tideType.color}`}>{tideType.type}</div>
                     </div>
-                  </div>
+                    <ChevronRight size={14} className="text-slate-400" />
+                  </button>
 
                   {/* Activity bar */}
                   <div className="space-y-1">
@@ -1268,6 +1351,12 @@ export function FishingWidget() {
       <AnimatePresence>
         {showPrecipModal && hourlyForecast.length > 0 && (
           <PrecipitationModal hourlyData={hourlyForecast} onClose={() => setShowPrecipModal(false)} />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showMoonModal && (
+          <MoonModal onClose={() => setShowMoonModal(false)} />
         )}
       </AnimatePresence>
     </motion.div>
