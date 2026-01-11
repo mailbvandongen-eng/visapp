@@ -30,7 +30,7 @@ export function WindIndicator() {
 
   return (
     <motion.div
-      className="fixed bottom-4 left-2 z-[700] bg-white/90 backdrop-blur-sm rounded-xl shadow-sm p-2"
+      className="fixed top-32 right-2 z-[700] bg-white/90 backdrop-blur-sm rounded-xl shadow-sm p-2"
       initial={{ opacity: 0, scale: 0.8 }}
       animate={{ opacity: 1, scale: 1 }}
     >

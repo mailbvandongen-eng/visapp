@@ -210,7 +210,7 @@ export function TideWidget() {
     <>
       {/* Compact button */}
       <motion.button
-        className="fixed bottom-28 left-2 z-[700] bg-white/90 backdrop-blur-sm rounded-xl shadow-sm p-2 flex items-center gap-2 border-0 outline-none"
+        className="fixed top-48 right-2 z-[700] bg-white/90 backdrop-blur-sm rounded-xl shadow-sm p-2 flex items-center gap-2 border-0 outline-none"
         onClick={() => setShowModal(true)}
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
