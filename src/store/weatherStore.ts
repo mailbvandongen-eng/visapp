@@ -21,12 +21,20 @@ interface HourlyForecast {
   windDirection: number
   pressure: number
   weatherCode: number
+  precipitationProbability: number
+  precipitation: number
+}
+
+interface Precipitation15min {
+  time: string
+  precipitation: number
 }
 
 interface WeatherState {
   current: CurrentWeather | null
   pressureHistory: PressureDataPoint[]
   hourlyForecast: HourlyForecast[]
+  precipitation15min: Precipitation15min[]
   loading: boolean
   lastUpdate: number | null
   error: string | null
@@ -42,6 +50,7 @@ export const useWeatherStore = create<WeatherState>((set, get) => ({
   current: null,
   pressureHistory: [],
   hourlyForecast: [],
+  precipitation15min: [],
   loading: false,
   lastUpdate: null,
   error: null,
@@ -53,10 +62,13 @@ export const useWeatherStore = create<WeatherState>((set, get) => ({
       const params = new URLSearchParams({
         latitude: lat.toString(),
         longitude: lon.toString(),
-        current: 'temperature_2m,relative_humidity_2m,surface_pressure,wind_speed_10m,wind_direction_10m,weather_code',
-        hourly: 'temperature_2m,wind_speed_10m,wind_direction_10m,surface_pressure,weather_code',
+        current: 'temperature_2m,relative_humidity_2m,surface_pressure,wind_speed_10m,wind_direction_10m,weather_code,precipitation',
+        hourly: 'temperature_2m,wind_speed_10m,wind_direction_10m,surface_pressure,weather_code,precipitation_probability,precipitation',
+        minutely_15: 'precipitation',
         past_hours: '24',
         forecast_hours: '48',
+        past_minutely_15: '0',
+        forecast_minutely_15: '8',
         timezone: 'Europe/Amsterdam'
       })
 
@@ -66,6 +78,7 @@ export const useWeatherStore = create<WeatherState>((set, get) => ({
       // Parse hourly pressure data
       let pressureHistory: PressureDataPoint[] = []
       let hourlyForecast: HourlyForecast[] = []
+      let precipitation15min: Precipitation15min[] = []
 
       if (data.hourly?.time && data.hourly?.surface_pressure) {
         pressureHistory = data.hourly.time.map((time: string, i: number) => ({
@@ -79,7 +92,17 @@ export const useWeatherStore = create<WeatherState>((set, get) => ({
           windSpeed: data.hourly.wind_speed_10m[i],
           windDirection: data.hourly.wind_direction_10m[i],
           pressure: data.hourly.surface_pressure[i],
-          weatherCode: data.hourly.weather_code[i]
+          weatherCode: data.hourly.weather_code[i],
+          precipitationProbability: data.hourly.precipitation_probability?.[i] || 0,
+          precipitation: data.hourly.precipitation?.[i] || 0
+        }))
+      }
+
+      // Parse 15-minute precipitation forecast
+      if (data.minutely_15?.time && data.minutely_15?.precipitation) {
+        precipitation15min = data.minutely_15.time.map((time: string, i: number) => ({
+          time,
+          precipitation: data.minutely_15.precipitation[i] || 0
         }))
       }
 
@@ -95,6 +118,7 @@ export const useWeatherStore = create<WeatherState>((set, get) => ({
           },
           pressureHistory,
           hourlyForecast,
+          precipitation15min,
           loading: false,
           lastUpdate: Date.now()
         })

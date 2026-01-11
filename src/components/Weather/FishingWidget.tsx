@@ -264,8 +264,133 @@ function calculateTides(startDate: Date, days: number): TideData[] {
   return tides.sort((a, b) => a.time.getTime() - b.time.getTime())
 }
 
+// Precipitation graph (Buienalarm style)
+function PrecipitationGraph({ data }: { data: { time: string; precipitation: number }[] }) {
+  if (!data || data.length === 0) return null
+
+  const maxPrecip = Math.max(...data.map(d => d.precipitation), 0.5)
+  const hasRain = data.some(d => d.precipitation > 0)
+
+  const formatTime = (timeStr: string) => {
+    const date = new Date(timeStr)
+    return `${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}`
+  }
+
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center justify-between">
+        <span className="text-[10px] text-gray-500">Neerslag komende 2 uur</span>
+        {!hasRain && (
+          <span className="text-[10px] text-green-600 font-medium">Droog</span>
+        )}
+      </div>
+
+      <div className="relative h-10 bg-gray-100 rounded-lg overflow-hidden">
+        <div className="absolute inset-0 flex">
+          {[...Array(8)].map((_, i) => (
+            <div key={i} className="flex-1 border-r border-gray-200/50" />
+          ))}
+        </div>
+
+        <div className="absolute inset-0 flex items-end px-0.5">
+          {data.map((d, i) => {
+            const height = (d.precipitation / maxPrecip) * 100
+            const intensity = d.precipitation > 2 ? 'bg-blue-600' :
+                             d.precipitation > 0.5 ? 'bg-blue-500' :
+                             d.precipitation > 0 ? 'bg-blue-400' : 'bg-transparent'
+            return (
+              <div
+                key={i}
+                className="flex-1 mx-px"
+                title={`${formatTime(d.time)}: ${d.precipitation.toFixed(1)} mm`}
+              >
+                <div
+                  className={`w-full rounded-t transition-all ${intensity}`}
+                  style={{ height: `${Math.max(height, d.precipitation > 0 ? 8 : 0)}%` }}
+                />
+              </div>
+            )
+          })}
+        </div>
+
+        <div className="absolute bottom-0 left-0 right-0 flex justify-between px-1 text-[8px] text-gray-400">
+          <span>Nu</span>
+          <span>+1u</span>
+          <span>+2u</span>
+        </div>
+      </div>
+
+      {hasRain && (
+        <div className="flex items-center gap-2 text-[9px] text-gray-500">
+          <div className="flex items-center gap-1">
+            <div className="w-2 h-2 rounded-sm bg-blue-400" />
+            <span>Licht</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-2 h-2 rounded-sm bg-blue-500" />
+            <span>Matig</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-2 h-2 rounded-sm bg-blue-600" />
+            <span>Zwaar</span>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Hourly forecast
+interface HourlyData {
+  time: string
+  temperature: number
+  weatherCode: number
+  precipitationProbability: number
+}
+
+function HourlyForecast({ hourly }: { hourly: HourlyData[] }) {
+  const now = new Date()
+  const currentHour = now.getHours()
+
+  // Filter to show next 8 hours from now
+  const upcomingHours = hourly
+    .filter(h => new Date(h.time) >= now)
+    .slice(0, 8)
+
+  if (upcomingHours.length === 0) return null
+
+  return (
+    <div className="space-y-1">
+      <div className="text-[10px] text-gray-500">Komende uren</div>
+      <div className="flex gap-1 overflow-x-auto py-1 -mx-1 px-1">
+        {upcomingHours.map((hour, i) => {
+          const time = new Date(hour.time)
+          const isNow = time.getHours() === currentHour
+          return (
+            <div
+              key={hour.time}
+              className={`flex flex-col items-center p-1.5 rounded-lg min-w-[36px] ${
+                isNow ? 'bg-blue-100' : 'bg-gray-50'
+              }`}
+            >
+              <span className="text-[9px] text-gray-500">
+                {isNow ? 'Nu' : `${time.getHours()}:00`}
+              </span>
+              <WeatherIcon code={hour.weatherCode} size={14} />
+              <span className="text-[10px] font-medium">{Math.round(hour.temperature)}°</span>
+              {hour.precipitationProbability > 20 && (
+                <span className="text-[8px] text-blue-500">{hour.precipitationProbability}%</span>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 export function FishingWidget() {
-  const { current, loading, fetchWeather, getFishingScore, pressureHistory, getPressureTrend } = useWeatherStore()
+  const { current, loading, fetchWeather, getFishingScore, pressureHistory, getPressureTrend, hourlyForecast, precipitation15min } = useWeatherStore()
   const position = useGPSStore(state => state.position)
   const showWeatherWidget = useSettingsStore(state => state.showWeatherWidget)
   const { waterData, station, fetchData: fetchWaterData } = useWaterDataStore()
@@ -500,6 +625,16 @@ export function FishingWidget() {
                       })()}
                     </div>
                   </div>
+
+                  {/* Precipitation graph */}
+                  {precipitation15min.length > 0 && (
+                    <PrecipitationGraph data={precipitation15min} />
+                  )}
+
+                  {/* Hourly forecast */}
+                  {hourlyForecast.length > 0 && (
+                    <HourlyForecast hourly={hourlyForecast} />
+                  )}
 
                   {/* Next tides */}
                   {nextTides.length > 0 && (
