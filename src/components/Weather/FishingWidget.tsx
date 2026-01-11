@@ -58,25 +58,29 @@ function WindArrow({ degrees, size = 14 }: { degrees: number; size?: number }) {
   )
 }
 
-// Fish bone icon
+// Fish bone icon (for score < 0.5)
 function FishBone({ size = 16, className = '' }: { size?: number; className?: string }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <path d="M3 12h18" />
-      <path d="M21 12c-1.5 0-3-1-3-3s1.5-3 3-3" />
-      <path d="M21 12c-1.5 0-3 1-3 3s1.5 3 3 3" />
-      <circle cx="4" cy="12" r="1.5" fill="currentColor" />
-      <path d="M8 12l2-3" />
-      <path d="M8 12l2 3" />
-      <path d="M12 12l2-3" />
-      <path d="M12 12l2 3" />
-      <path d="M16 12l1.5-2" />
-      <path d="M16 12l1.5 2" />
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      {/* Main spine */}
+      <path d="M2 12h16" />
+      {/* Tail fin */}
+      <path d="M18 12l4-4" />
+      <path d="M18 12l4 4" />
+      {/* Head */}
+      <circle cx="3" cy="12" r="1.5" fill="currentColor" />
+      {/* Ribs */}
+      <path d="M6 12l1.5-3" />
+      <path d="M6 12l1.5 3" />
+      <path d="M10 12l1.5-3" />
+      <path d="M10 12l1.5 3" />
+      <path d="M14 12l1.5-2.5" />
+      <path d="M14 12l1.5 2.5" />
     </svg>
   )
 }
 
-// Fish icon with optional clipping
+// Fish icon - proper fish shape with clear tail
 function FishIcon({ size = 16, className = '', clipPercent = 100 }: { size?: number; className?: string; clipPercent?: number }) {
   const clipId = `fish-clip-${Math.random().toString(36).substr(2, 9)}`
   return (
@@ -87,31 +91,41 @@ function FishIcon({ size = 16, className = '', clipPercent = 100 }: { size?: num
         </clipPath>
       </defs>
       <g clipPath={`url(#${clipId})`}>
-        <path d="M6.5 12c0-3.5 3-6 7-6 2.5 0 4.5 1 6 2.5.8.8 1.5 1.8 2 3-.5 1.2-1.2 2.2-2 3-1.5 1.5-3.5 2.5-6 2.5-4 0-7-2.5-7-5z" />
-        <path d="M2.5 12l3-3v6l-3-3z" />
-        <circle cx="17" cy="11" r="1" fill="white" />
+        {/* Fish body - more elongated */}
+        <ellipse cx="12" cy="12" rx="8" ry="5" />
+        {/* Tail fin - clear V shape */}
+        <path d="M3 12L0 7V17L3 12Z" />
+        {/* Eye */}
+        <circle cx="17" cy="10.5" r="1.2" fill="white" />
+        <circle cx="17.3" cy="10.5" r="0.5" fill="black" />
+        {/* Top fin */}
+        <path d="M10 7L12 4L14 7" fill="currentColor" />
+        {/* Bottom fin */}
+        <path d="M11 17L12 19L13 17" fill="currentColor" />
       </g>
     </svg>
   )
 }
 
-// Fish scale (0-3 fish)
+// Fish scale (0-3 fish) with proper spacing
 function FishScale({ value, maxFish = 3, color }: { value: number; maxFish?: number; color: string }) {
   const fullFish = Math.floor(value)
-  const hasHalf = value % 1 >= 0.5
+  const partialFish = value % 1
   const fishArray = []
 
+  // Full fish
   for (let i = 0; i < fullFish && i < maxFish; i++) {
-    fishArray.push(<FishIcon key={i} size={16} className={color} />)
+    fishArray.push(<FishIcon key={i} size={18} className={color} />)
   }
 
-  if (hasHalf && fullFish < maxFish) {
-    fishArray.push(<FishIcon key="half" size={16} className={color} clipPercent={50} />)
+  // Half fish (if >= 0.5 remainder)
+  if (partialFish >= 0.5 && fullFish < maxFish) {
+    fishArray.push(<FishIcon key="half" size={18} className={color} clipPercent={60} />)
   }
 
   return (
-    <div className="flex items-center gap-0.5">
-      {fishArray.length > 0 ? fishArray : <FishBone size={16} className={color} />}
+    <div className="flex items-center gap-1">
+      {fishArray.length > 0 ? fishArray : <FishBone size={18} className={color} />}
     </div>
   )
 }
