@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion'
-import { X, Fish, MapPin, Map, Cloud } from 'lucide-react'
-import { useUIStore, useSettingsStore } from '../../store'
+import { X, Fish, MapPin, Map, Type } from 'lucide-react'
+import { useUIStore, useSettingsStore, useLayerStore } from '../../store'
 
 export function SettingsPanel() {
   const settingsPanelOpen = useUIStore(state => state.settingsPanelOpen)
@@ -14,8 +14,22 @@ export function SettingsPanel() {
   const setShowFavoriteSpots = useSettingsStore(state => state.setShowFavoriteSpots)
   const defaultBackground = useSettingsStore(state => state.defaultBackground)
   const setDefaultBackground = useSettingsStore(state => state.setDefaultBackground)
-  const showWeatherWidget = useSettingsStore(state => state.showWeatherWidget)
-  const setShowWeatherWidget = useSettingsStore(state => state.setShowWeatherWidget)
+  const fontScale = useSettingsStore(state => state.fontScale)
+  const setFontScale = useSettingsStore(state => state.setFontScale)
+  const showFontSliders = useSettingsStore(state => state.showFontSliders)
+  const setShowFontSliders = useSettingsStore(state => state.setShowFontSliders)
+  const setLayerVisibility = useLayerStore(state => state.setLayerVisibility)
+
+  // Calculate font size based on fontScale setting
+  const baseFontSize = 14 * fontScale / 100
+
+  // Handle background change - also apply to layer visibility
+  const handleBackgroundChange = (value: 'OpenStreetMap' | 'Luchtfoto') => {
+    setDefaultBackground(value)
+    setLayerVisibility('OpenStreetMap', value === 'OpenStreetMap')
+    setLayerVisibility('Luchtfoto', value === 'Luchtfoto')
+    setLayerVisibility('Labels Overlay', value === 'Luchtfoto')
+  }
 
   if (!settingsPanelOpen) return null
 
@@ -39,9 +53,9 @@ export function SettingsPanel() {
           <h2 className="text-lg font-semibold text-white">Instellingen</h2>
           <button
             onClick={toggleSettingsPanel}
-            className="p-1 rounded-full hover:bg-white/20 transition-colors border-0 outline-none"
+            className="p-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 transition-colors border-0 outline-none"
           >
-            <X size={20} className="text-white" />
+            <X size={18} className="text-white" />
           </button>
         </div>
 
@@ -93,7 +107,7 @@ export function SettingsPanel() {
                 <p className="text-sm font-medium text-gray-700">Standaard achtergrond</p>
                 <select
                   value={defaultBackground}
-                  onChange={(e) => setDefaultBackground(e.target.value as any)}
+                  onChange={(e) => handleBackgroundChange(e.target.value as 'OpenStreetMap' | 'Luchtfoto')}
                   className="mt-1 w-full px-2 py-1 text-sm border border-gray-200 rounded-lg bg-white outline-none focus:ring-2 focus:ring-blue-400"
                 >
                   <option value="OpenStreetMap">OpenStreetMap</option>
@@ -103,17 +117,38 @@ export function SettingsPanel() {
             </div>
           </div>
 
-          {/* Weer sectie */}
+          {/* Weergave sectie */}
           <div className="space-y-3 pt-2 border-t border-gray-100">
-            <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide">Weer & Water</h3>
+            <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide">Weergave</h3>
 
             <ToggleItem
-              icon={<Cloud size={18} className="text-blue-400" />}
-              label="Vis-weer widget"
-              description="Weer, getijden, waterdata, maanstand"
-              checked={showWeatherWidget}
-              onChange={setShowWeatherWidget}
+              icon={<Type size={18} className="text-purple-500" />}
+              label="Tekstgrootte aanpassen"
+              description="Toon schuifbalk voor tekstgrootte"
+              checked={showFontSliders}
+              onChange={setShowFontSliders}
             />
+
+            {showFontSliders && (
+              <div className="flex items-center gap-3 pl-2">
+                <span className="text-xs text-gray-500">T</span>
+                <input
+                  type="range"
+                  min="80"
+                  max="150"
+                  step="10"
+                  value={fontScale}
+                  onChange={(e) => setFontScale(parseInt(e.target.value))}
+                  className="flex-1"
+                />
+                <span className="text-lg text-gray-500">T</span>
+                <span className="text-xs text-gray-500 w-10">{fontScale}%</span>
+              </div>
+            )}
+
+            <p className="text-xs text-gray-400 pl-2">
+              Widgets via lang drukken op kaart → Widgets
+            </p>
           </div>
         </div>
 

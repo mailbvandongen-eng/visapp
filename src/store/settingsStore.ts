@@ -19,6 +19,8 @@ interface SettingsState {
   showForecastSlider: boolean
   showWaterDataWidget: boolean
   widgetOrder: WidgetId[]
+  fontScale: number  // 80-150, percentage scale for app text
+  showFontSliders: boolean  // Show/hide font size sliders
 
   setDefaultBackground: (bg: DefaultBackground) => void
   setShowScaleBar: (value: boolean) => void
@@ -34,6 +36,8 @@ interface SettingsState {
   setShowForecastSlider: (value: boolean) => void
   setShowWaterDataWidget: (value: boolean) => void
   setWidgetOrder: (order: WidgetId[]) => void
+  setFontScale: (scale: number) => void
+  setShowFontSliders: (value: boolean) => void
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -53,6 +57,8 @@ export const useSettingsStore = create<SettingsState>()(
       showForecastSlider: false,
       showWaterDataWidget: false,
       widgetOrder: ['wind', 'tide', 'forecast', 'waterData'],
+      fontScale: 100,  // Default 100%
+      showFontSliders: false,  // Hidden by default
 
       setDefaultBackground: (defaultBackground) => set({ defaultBackground }),
       setShowScaleBar: (showScaleBar) => set({ showScaleBar }),
@@ -67,7 +73,9 @@ export const useSettingsStore = create<SettingsState>()(
       setShowTideWidget: (showTideWidget) => set({ showTideWidget }),
       setShowForecastSlider: (showForecastSlider) => set({ showForecastSlider }),
       setShowWaterDataWidget: (showWaterDataWidget) => set({ showWaterDataWidget }),
-      setWidgetOrder: (widgetOrder) => set({ widgetOrder })
+      setWidgetOrder: (widgetOrder) => set({ widgetOrder }),
+      setFontScale: (fontScale) => set({ fontScale }),
+      setShowFontSliders: (showFontSliders) => set({ showFontSliders })
     }),
     {
       name: 'visapp-settings'

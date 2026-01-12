@@ -1042,151 +1042,6 @@ function TideModal({ onClose }: { onClose: () => void }) {
   )
 }
 
-// Water Data Modal - Clean design without blue header
-function WaterDataModal({ onClose }: { onClose: () => void }) {
-  const { waterData, station, fetchData, setStation, isLoading } = useWaterDataStore()
-
-  const getTempColor = (temp: number) => {
-    if (temp < 8) return 'text-blue-600'
-    if (temp < 14) return 'text-cyan-500'
-    if (temp < 18) return 'text-green-500'
-    return 'text-orange-500'
-  }
-
-  const getWaveLabel = (height: number) => {
-    if (height < 30) return 'Kalm'
-    if (height < 60) return 'Licht'
-    if (height < 100) return 'Matig'
-    if (height < 150) return 'Ruw'
-    return 'Hoog'
-  }
-
-  return (
-    <motion.div
-      className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/50 p-4"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      onClick={onClose}
-    >
-      <motion.div
-        className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden select-none"
-        initial={{ scale: 0.9, opacity: 0, y: 20 }}
-        animate={{ scale: 1, opacity: 1, y: 0 }}
-        exit={{ scale: 0.9, opacity: 0, y: 20 }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="p-4 space-y-4">
-          {/* Header row */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Droplets size={20} className="text-cyan-500" />
-              <span className="font-semibold text-gray-800">Waterdata</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => fetchData()}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors border-0 outline-none bg-transparent"
-                disabled={isLoading}
-              >
-                <RefreshCw size={16} className={`text-gray-500 ${isLoading ? 'animate-spin' : ''}`} />
-              </button>
-              <button
-                onClick={onClose}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors border-0 outline-none bg-transparent"
-              >
-                <X size={16} className="text-gray-500" />
-              </button>
-            </div>
-          </div>
-
-          {/* Station selector */}
-          <select
-            value={station?.id || ''}
-            onChange={(e) => {
-              const newStation = RWS_STATIONS.find(s => s.id === e.target.value)
-              if (newStation) setStation(newStation)
-            }}
-            className="w-full p-2.5 border border-gray-200 rounded-xl text-sm bg-white/80 outline-none focus:ring-2 focus:ring-cyan-400"
-          >
-            {RWS_STATIONS.map(s => (
-              <option key={s.id} value={s.id}>{s.name}</option>
-            ))}
-          </select>
-
-          {/* Data cards */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bg-gradient-to-br from-cyan-50 to-blue-50 rounded-xl p-3">
-              <div className="flex items-center gap-1.5 mb-1">
-                <Thermometer size={14} className="text-cyan-500" />
-                <span className="text-[10px] text-gray-500">Water</span>
-              </div>
-              {waterData?.temperature !== undefined ? (
-                <>
-                  <div className={`text-xl font-bold ${getTempColor(waterData.temperature)}`}>
-                    {waterData.temperature.toFixed(1)}°C
-                  </div>
-                  <div className="text-[9px] text-gray-400 mt-0.5">
-                    {waterData.temperature < 10 ? 'Koud' : waterData.temperature < 15 ? 'Roofvis' : 'Warm'}
-                  </div>
-                </>
-              ) : <div className="text-gray-400 text-lg">-</div>}
-            </div>
-
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-3">
-              <div className="flex items-center gap-1.5 mb-1">
-                <Waves size={14} className="text-blue-500" />
-                <span className="text-[10px] text-gray-500">Golven</span>
-              </div>
-              {waterData?.waveHeight !== undefined ? (
-                <>
-                  <div className="text-xl font-bold text-blue-600">{waterData.waveHeight} cm</div>
-                  <div className="text-[9px] text-gray-400 mt-0.5">{getWaveLabel(waterData.waveHeight)}</div>
-                </>
-              ) : <div className="text-gray-400 text-lg">-</div>}
-            </div>
-
-            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-3">
-              <div className="flex items-center gap-1.5 mb-1">
-                <Navigation size={14} className="text-green-500" />
-                <span className="text-[10px] text-gray-500">Stroming</span>
-              </div>
-              {waterData?.currentSpeed !== undefined ? (
-                <>
-                  <div className="text-xl font-bold text-green-600">{waterData.currentSpeed} cm/s</div>
-                  <div className="text-[9px] text-gray-400 mt-0.5">
-                    {waterData.currentSpeed < 20 ? 'Zwak' : waterData.currentSpeed < 50 ? 'Matig' : 'Sterk'}
-                  </div>
-                </>
-              ) : <div className="text-gray-400 text-lg">-</div>}
-            </div>
-
-            <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-3">
-              <div className="flex items-center gap-1.5 mb-1">
-                <Navigation size={14} className="text-purple-500" />
-                <span className="text-[10px] text-gray-500">Richting</span>
-              </div>
-              {waterData?.currentDirection !== undefined ? (
-                <div className="flex items-center gap-2">
-                  <div style={{ transform: `rotate(${waterData.currentDirection}deg)` }}>
-                    <Navigation size={20} className="text-purple-500" fill="currentColor" />
-                  </div>
-                  <div className="text-lg font-bold text-purple-600">{Math.round(waterData.currentDirection)}°</div>
-                </div>
-              ) : <div className="text-gray-400 text-lg">-</div>}
-            </div>
-          </div>
-
-          {/* Footer */}
-          <div className="text-[10px] text-gray-400 text-center pt-1">
-            Bron: Rijkswaterstaat
-          </div>
-        </div>
-      </motion.div>
-    </motion.div>
-  )
-}
-
 // Pressure Modal with fishing activity timeline
 function PressureModal({ pressureHistory, currentPressure, trend, onClose }: {
   pressureHistory: { time: string; pressure: number }[];
@@ -1577,13 +1432,10 @@ export function FishingWidget() {
 
   const [isExpanded, setIsExpanded] = useState(false)
   const [showTideModal, setShowTideModal] = useState(false)
-  const [showWaterModal, setShowWaterModal] = useState(false)
   const [showPrecipModal, setShowPrecipModal] = useState(false)
   const [showMoonModal, setShowMoonModal] = useState(false)
   const [showPressureModal, setShowPressureModal] = useState(false)
   const [showRadarModal, setShowRadarModal] = useState(false)
-
-  const safeTopStyle = { top: 'max(0.5rem, env(safe-area-inset-top, 0.5rem))' }
 
   // Fetch weather and water data
   useEffect(() => {
@@ -1634,13 +1486,6 @@ export function FishingWidget() {
     return 'text-red-500'
   }
 
-  const getBgForScore = (s: number) => {
-    if (s >= 2.5) return 'bg-green-50 border-green-200'
-    if (s >= 1.5) return 'bg-lime-50 border-lime-200'
-    if (s >= 0.8) return 'bg-amber-50 border-amber-200'
-    return 'bg-red-50 border-red-200'
-  }
-
   const getScoreLabel = (s: number) => {
     if (s >= 2.5) return 'Uitstekend'
     if (s >= 1.5) return 'Goed'
@@ -1658,80 +1503,93 @@ export function FishingWidget() {
   if (!showWeatherWidget) return null
 
   return (
-    <motion.div
-      className={`fixed left-2 z-[700] backdrop-blur-sm rounded-xl shadow-sm border transition-all select-none ${getBgForScore(combinedScore)}`}
-      style={safeTopStyle}
-      initial={{ opacity: 0, x: -20 }}
-      animate={{ opacity: 1, x: 0 }}
-    >
-      {loading && !current ? (
-        <div className="p-3 flex items-center gap-2">
-          <RefreshCw size={16} className="animate-spin text-blue-500" />
-          <span className="text-sm text-gray-500">Laden...</span>
-        </div>
-      ) : current ? (
-        <div className="p-2.5 min-w-[160px]">
-          {/* Collapsed view */}
-          <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="w-full border-0 outline-none bg-transparent p-0"
-          >
-            <div className="flex items-center gap-3">
-              {/* Weather + temp */}
-              <div className="flex items-center gap-2">
-                <WeatherIcon code={current.weatherCode} size={24} />
-                <div className="flex flex-col leading-tight">
-                  <span className="text-lg font-bold text-gray-800">
-                    {Math.round(current.temperature)}°
-                  </span>
+    <>
+      {/* Backdrop when expanded - click to close */}
+      {isExpanded && (
+        <div
+          className="fixed inset-0 z-[1499]"
+          onClick={() => setIsExpanded(false)}
+        />
+      )}
+
+      {/* Widget */}
+      <motion.div
+        className={`fixed left-2 z-[1500] bg-white shadow-lg border border-gray-200 select-none rounded-xl ${
+          isExpanded ? 'top-2 bottom-2 w-[220px] overflow-y-auto' : ''
+        }`}
+        style={!isExpanded ? { top: 'calc(max(0.5rem, env(safe-area-inset-top, 0.5rem)) + 52px)' } : undefined}
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        layout
+      >
+        {loading && !current ? (
+          <div className="p-3 flex items-center gap-2">
+            <RefreshCw size={16} className="animate-spin text-blue-500" />
+            <span className="text-sm text-gray-500">Laden...</span>
+          </div>
+        ) : current ? (
+          <div className="p-2.5">
+            {/* Collapsed view - always visible as header */}
+            <button
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="w-full border-0 outline-none bg-transparent p-0"
+            >
+              <div className="flex items-center gap-3">
+                {/* Weather + temp */}
+                <div className="flex items-center gap-2">
+                  <WeatherIcon code={current.weatherCode} size={24} />
+                  <div className="flex flex-col leading-tight">
+                    <span className="text-lg font-bold text-gray-800">
+                      {Math.round(current.temperature)}°
+                    </span>
+                  </div>
+                </div>
+
+                {/* Wind */}
+                <div className="flex items-center gap-1">
+                  <Wind size={14} className="text-gray-400" />
+                  <span className="text-sm text-gray-600">{Math.round(current.windSpeed)}</span>
+                  <WindArrow degrees={current.windDirection} size={12} />
+                </div>
+
+                {/* Expand */}
+                <div className="ml-auto">
+                  {isExpanded ? (
+                    <ChevronUp size={16} className="text-gray-400" />
+                  ) : (
+                    <ChevronDown size={16} className="text-gray-400" />
+                  )}
                 </div>
               </div>
 
-              {/* Wind */}
-              <div className="flex items-center gap-1">
-                <Wind size={14} className="text-gray-400" />
-                <span className="text-sm text-gray-600">{Math.round(current.windSpeed)}</span>
-                <WindArrow degrees={current.windDirection} size={12} />
+              {/* Fish score bar */}
+              <div className="flex items-center gap-2 mt-1.5 pt-1.5 border-t border-gray-200/50">
+                <FishScale value={combinedScore} color={getColorForScore(combinedScore)} />
+                <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full transition-all ${
+                      combinedScore >= 2.5 ? 'bg-green-500' :
+                      combinedScore >= 1.5 ? 'bg-lime-500' :
+                      combinedScore >= 0.8 ? 'bg-amber-500' : 'bg-red-500'
+                    }`}
+                    style={{ width: `${Math.max((combinedScore / 3) * 100, 5)}%` }}
+                  />
+                </div>
+                <span className={`text-[10px] font-medium ${getColorForScore(combinedScore)}`}>
+                  {getScoreLabel(combinedScore)}
+                </span>
               </div>
+            </button>
 
-              {/* Expand */}
-              <div className="ml-auto">
-                {isExpanded ? (
-                  <ChevronUp size={16} className="text-gray-400" />
-                ) : (
-                  <ChevronDown size={16} className="text-gray-400" />
-                )}
-              </div>
-            </div>
-
-            {/* Fish score bar */}
-            <div className="flex items-center gap-2 mt-1.5 pt-1.5 border-t border-gray-200/50">
-              <FishScale value={combinedScore} color={getColorForScore(combinedScore)} />
-              <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                <div
-                  className={`h-full transition-all ${
-                    combinedScore >= 2.5 ? 'bg-green-500' :
-                    combinedScore >= 1.5 ? 'bg-lime-500' :
-                    combinedScore >= 0.8 ? 'bg-amber-500' : 'bg-red-500'
-                  }`}
-                  style={{ width: `${Math.max((combinedScore / 3) * 100, 5)}%` }}
-                />
-              </div>
-              <span className={`text-[10px] font-medium ${getColorForScore(combinedScore)}`}>
-                {getScoreLabel(combinedScore)}
-              </span>
-            </div>
-          </button>
-
-          {/* Expanded view */}
-          <AnimatePresence>
-            {isExpanded && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                className="overflow-hidden"
-              >
+            {/* Expanded view */}
+            <AnimatePresence>
+              {isExpanded && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="overflow-hidden"
+                >
                 <div className="pt-3 mt-2 border-t border-gray-200/50 space-y-3">
                   {/* Weather description */}
                   <div className="text-xs text-gray-600">
@@ -1795,56 +1653,53 @@ export function FishingWidget() {
                       </select>
                     </div>
 
-                    {/* Water data grid - all 4 items */}
-                    <button
-                      onClick={() => setShowWaterModal(true)}
-                      className="w-full grid grid-cols-2 gap-2 border-0 bg-transparent p-0 cursor-pointer"
-                    >
+                    {/* Water data grid - all 4 items (display only) */}
+                    <div className="grid grid-cols-2 gap-2">
                       {waterData?.temperature !== undefined && (
-                        <div className="bg-cyan-50 rounded-lg p-2 hover:bg-cyan-100 transition-colors">
+                        <div className="bg-cyan-50 rounded-lg p-2">
                           <div className="flex items-center gap-1 text-[10px] text-gray-500">
                             <Thermometer size={12} className="text-cyan-500" />
                             <span>Water</span>
                           </div>
-                          <div className="text-sm font-bold text-cyan-600 text-left">
+                          <div className="text-sm font-bold text-cyan-600">
                             {waterData.temperature.toFixed(1)}°C
                           </div>
                         </div>
                       )}
                       {waterData?.waveHeight !== undefined && (
-                        <div className="bg-blue-50 rounded-lg p-2 hover:bg-blue-100 transition-colors">
+                        <div className="bg-blue-50 rounded-lg p-2">
                           <div className="flex items-center gap-1 text-[10px] text-gray-500">
                             <Waves size={12} className="text-blue-500" />
                             <span>Golven</span>
                           </div>
-                          <div className="text-sm font-bold text-blue-600 text-left">
+                          <div className="text-sm font-bold text-blue-600">
                             {waterData.waveHeight} cm
                           </div>
                         </div>
                       )}
                       {waterData?.currentSpeed !== undefined && (
-                        <div className="bg-green-50 rounded-lg p-2 hover:bg-green-100 transition-colors">
+                        <div className="bg-green-50 rounded-lg p-2">
                           <div className="flex items-center gap-1 text-[10px] text-gray-500">
                             <Navigation size={12} className="text-green-500" />
                             <span>Stroming</span>
                           </div>
-                          <div className="text-sm font-bold text-green-600 text-left">
+                          <div className="text-sm font-bold text-green-600">
                             {waterData.currentSpeed} cm/s
                           </div>
                         </div>
                       )}
                       {waterData?.currentDirection !== undefined && (
-                        <div className="bg-purple-50 rounded-lg p-2 hover:bg-purple-100 transition-colors">
+                        <div className="bg-purple-50 rounded-lg p-2">
                           <div className="flex items-center gap-1 text-[10px] text-gray-500">
                             <Navigation size={12} className="text-purple-500" style={{ transform: `rotate(${waterData.currentDirection}deg)` }} />
                             <span>Richting</span>
                           </div>
-                          <div className="text-sm font-bold text-purple-600 text-left">
+                          <div className="text-sm font-bold text-purple-600">
                             {Math.round(waterData.currentDirection)}°
                           </div>
                         </div>
                       )}
-                    </button>
+                    </div>
                   </div>
 
                   {/* Weather details - pressure clickable */}
@@ -1968,12 +1823,6 @@ export function FishingWidget() {
       </AnimatePresence>
 
       <AnimatePresence>
-        {showWaterModal && (
-          <WaterDataModal onClose={() => setShowWaterModal(false)} />
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
         {showPrecipModal && hourlyForecast.length > 0 && (
           <PrecipitationModal hourlyData={hourlyForecast} onClose={() => setShowPrecipModal(false)} />
         )}
@@ -2002,5 +1851,6 @@ export function FishingWidget() {
         )}
       </AnimatePresence>
     </motion.div>
+    </>
   )
 }

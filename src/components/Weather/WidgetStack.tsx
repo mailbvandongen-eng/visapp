@@ -53,7 +53,7 @@ export function WidgetStack() {
 
   return (
     <div
-      className="fixed right-2 z-[700]"
+      className="fixed right-2 z-[1000]"
       style={{ top: 'calc(max(0.5rem, env(safe-area-inset-top, 0.5rem)) + 52px)' }}
     >
       <Reorder.Group

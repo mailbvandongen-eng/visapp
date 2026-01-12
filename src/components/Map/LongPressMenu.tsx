@@ -1,8 +1,8 @@
 import { useEffect, useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, MapPin, ExternalLink, Fish, PersonStanding, Camera } from 'lucide-react'
+import { X, MapPin, ExternalLink, Fish, PersonStanding, Camera, Cloud, ChevronRight, Wind, Waves, BarChart3 } from 'lucide-react'
 import { toLonLat } from 'ol/proj'
-import { useMapStore, useUIStore } from '../../store'
+import { useMapStore, useUIStore, useSettingsStore } from '../../store'
 import { extractGPSFromPhoto } from '../../lib/exifUtils'
 import { processImageForUpload, generatePhotoId } from '../../lib/imageUtils'
 import type { PhotoData } from '../../store/catchStore'
@@ -16,9 +16,20 @@ export function LongPressMenu() {
   const map = useMapStore(state => state.map)
   const openCatchForm = useUIStore(state => state.openCatchForm)
 
+  // Widget settings
+  const showWeatherWidget = useSettingsStore(state => state.showWeatherWidget)
+  const setShowWeatherWidget = useSettingsStore(state => state.setShowWeatherWidget)
+  const showWindIndicator = useSettingsStore(state => state.showWindIndicator)
+  const setShowWindIndicator = useSettingsStore(state => state.setShowWindIndicator)
+  const showTideWidget = useSettingsStore(state => state.showTideWidget)
+  const setShowTideWidget = useSettingsStore(state => state.setShowTideWidget)
+  const showForecastSlider = useSettingsStore(state => state.showForecastSlider)
+  const setShowForecastSlider = useSettingsStore(state => state.setShowForecastSlider)
+
   const [menuLocation, setMenuLocation] = useState<LongPressLocation | null>(null)
   const [visible, setVisible] = useState(false)
   const [canClose, setCanClose] = useState(false)
+  const [showWidgetsSubmenu, setShowWidgetsSubmenu] = useState(false)
 
   const longPressTimer = useRef<number | null>(null)
   const startPos = useRef<{ x: number; y: number } | null>(null)
@@ -199,6 +210,7 @@ export function LongPressMenu() {
     setVisible(false)
     setMenuLocation(null)
     setCanClose(false)
+    setShowWidgetsSubmenu(false)
   }
 
   const cameraInputRef = useRef<HTMLInputElement>(null)
@@ -351,6 +363,55 @@ export function LongPressMenu() {
                 <ExternalLink size={20} className="text-blue-600" />
                 <span className="font-medium">Google Maps</span>
               </button>
+
+              {/* Widgets submenu */}
+              <button
+                onClick={() => setShowWidgetsSubmenu(!showWidgetsSubmenu)}
+                className="w-full px-4 py-3 flex items-center gap-3 transition-colors hover:bg-purple-50 text-gray-700 bg-white border-0 outline-none"
+              >
+                <Cloud size={20} className="text-purple-500" />
+                <span className="font-medium">Widgets</span>
+                <ChevronRight size={16} className={`ml-auto text-gray-400 transition-transform ${showWidgetsSubmenu ? 'rotate-90' : ''}`} />
+              </button>
+
+              {/* Widgets submenu content */}
+              <AnimatePresence>
+                {showWidgetsSubmenu && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    className="overflow-hidden bg-gray-50"
+                  >
+                    <div className="py-1">
+                      <WidgetToggle
+                        icon={<Cloud size={16} className="text-blue-500" />}
+                        label="Weer widget"
+                        checked={showWeatherWidget}
+                        onChange={setShowWeatherWidget}
+                      />
+                      <WidgetToggle
+                        icon={<Wind size={16} className="text-cyan-500" />}
+                        label="Wind indicator"
+                        checked={showWindIndicator}
+                        onChange={setShowWindIndicator}
+                      />
+                      <WidgetToggle
+                        icon={<Waves size={16} className="text-blue-400" />}
+                        label="Getijden widget"
+                        checked={showTideWidget}
+                        onChange={setShowTideWidget}
+                      />
+                      <WidgetToggle
+                        icon={<BarChart3 size={16} className="text-orange-500" />}
+                        label="Voorspelling schuif"
+                        checked={showForecastSlider}
+                        onChange={setShowForecastSlider}
+                      />
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             {/* Hidden camera input */}
@@ -377,5 +438,27 @@ export function LongPressMenu() {
         </>
       )}
     </AnimatePresence>
+  )
+}
+
+// Widget toggle component for submenu
+function WidgetToggle({ icon, label, checked, onChange }: {
+  icon: React.ReactNode
+  label: string
+  checked: boolean
+  onChange: (value: boolean) => void
+}) {
+  return (
+    <button
+      onClick={() => onChange(!checked)}
+      className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-gray-100 transition-colors border-0 outline-none bg-transparent"
+    >
+      {icon}
+      <span className="text-sm text-gray-700 flex-1 text-left">{label}</span>
+      <div className={`w-9 h-5 rounded-full transition-colors ${checked ? 'bg-blue-500' : 'bg-gray-300'}`}>
+        <div className={`w-4 h-4 mt-0.5 rounded-full bg-white shadow transition-transform ${checked ? 'ml-4.5 translate-x-0' : 'ml-0.5'}`}
+             style={{ marginLeft: checked ? '18px' : '2px' }} />
+      </div>
+    </button>
   )
 }
