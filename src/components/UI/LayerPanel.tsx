@@ -1,8 +1,8 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { Layers, Anchor, Ship, Waves, MapPin, Check, Tag, Mountain } from 'lucide-react'
+import { Layers, Anchor, Ship, Waves, MapPin, Check, Tag, Mountain, X, Droplets } from 'lucide-react'
 import { useLayerStore, useUIStore } from '../../store'
 
-const LAYER_CONFIG = [
+const VIS_LAYERS = [
   { name: 'Aanlegsteigers', icon: Anchor, color: '#2196F3' },
   { name: 'Boothellingen', icon: Ship, color: '#4CAF50' },
   { name: 'Dieptekaart', icon: Waves, color: '#00BCD4' },
@@ -28,7 +28,6 @@ export function LayerPanel() {
     BASE_LAYERS.forEach(layer => {
       setLayerVisibility(layer.name, layer.name === layerName)
     })
-    // Auto-enable labels overlay when switching to satellite
     if (layerName === 'Luchtfoto') {
       setLayerVisibility('Labels Overlay', true)
     } else {
@@ -42,6 +41,8 @@ export function LayerPanel() {
 
   const hillshadeOpacity = opacity['AHN4 Hillshade'] ?? 0.5
   const hillshadeVisible = visible['AHN4 Hillshade']
+  const hydroOpacity = opacity['Hydro Overlay'] ?? 0.8
+  const hydroVisible = visible['Hydro Overlay']
 
   return (
     <>
@@ -71,20 +72,30 @@ export function LayerPanel() {
               onClick={toggleLayerPanel}
             />
             <motion.div
-              className="fixed top-2 right-2 z-[1001] bg-white rounded-xl shadow-lg overflow-hidden min-w-[220px]"
-              initial={{ opacity: 0, y: -10, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -10, scale: 0.95 }}
+              className="fixed top-2 right-2 z-[1001] bg-white rounded-lg shadow-lg overflow-hidden w-[280px] max-h-[calc(100vh-100px)] flex flex-col"
+              initial={{ opacity: 0, x: 10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 10 }}
+              transition={{ duration: 0.15 }}
             >
               {/* Header */}
-              <div className="px-3 py-2 bg-gradient-to-r from-blue-500 to-blue-600">
-                <span className="font-medium text-white text-sm">Kaartlagen</span>
+              <div className="flex items-center justify-between px-3 py-2 bg-blue-500">
+                <div className="flex items-center gap-2">
+                  <Layers size={14} className="text-white" />
+                  <span className="font-medium text-white text-sm">Kaartlagen</span>
+                </div>
+                <button
+                  onClick={toggleLayerPanel}
+                  className="p-0.5 rounded border-0 outline-none bg-blue-400/50 hover:bg-blue-400 transition-colors"
+                >
+                  <X size={16} className="text-white" strokeWidth={2.5} />
+                </button>
               </div>
 
-              <div className="p-2">
+              <div className="p-2 overflow-y-auto flex-1">
                 {/* Base layers */}
-                <div className="mb-2 pb-2 border-b border-gray-100">
-                  <div className="text-xs font-medium text-gray-400 mb-1.5 px-1">Achtergrond</div>
+                <div className="mb-3 pb-2 border-b border-gray-100">
+                  <div className="text-xs font-medium text-gray-500 mb-1.5 px-1 uppercase tracking-wide">Achtergrond</div>
                   <div className="flex gap-1">
                     {BASE_LAYERS.map((layer) => (
                       <button
@@ -92,7 +103,7 @@ export function LayerPanel() {
                         className={`flex-1 px-2 py-1.5 text-xs rounded-lg transition-colors border-0 outline-none ${
                           visible[layer.name]
                             ? 'bg-blue-500 text-white'
-                            : 'bg-transparent text-gray-600 hover:bg-blue-50'
+                            : 'bg-gray-100 text-gray-600 hover:bg-blue-50'
                         }`}
                         onClick={() => handleBaseLayerChange(layer.name)}
                       >
@@ -100,7 +111,6 @@ export function LayerPanel() {
                       </button>
                     ))}
                   </div>
-                  {/* Labels toggle - only show when satellite is active */}
                   {visible['Luchtfoto'] && (
                     <button
                       onClick={handleLabelsToggle}
@@ -119,97 +129,76 @@ export function LayerPanel() {
                   )}
                 </div>
 
-                {/* AHN4 Hillshade with opacity slider */}
-                <div className="mb-2 pb-2 border-b border-gray-100">
-                  <div className="text-xs font-medium text-gray-400 mb-1.5 px-1">Hoogtekaart</div>
-                  <button
-                    className={`w-full flex items-center gap-2 px-2 py-2 rounded-lg transition-colors border-0 outline-none ${
-                      hillshadeVisible
-                        ? 'bg-amber-50'
-                        : 'bg-transparent hover:bg-amber-50'
-                    }`}
-                    onClick={() => toggleLayer('AHN4 Hillshade')}
-                  >
-                    <div
-                      className="w-6 h-6 rounded-md flex items-center justify-center transition-colors"
-                      style={{ backgroundColor: hillshadeVisible ? '#f59e0b' : '#e5e7eb' }}
-                    >
-                      <Mountain size={14} className="text-white" />
-                    </div>
-                    <span className={`text-sm ${hillshadeVisible ? 'text-amber-700' : 'text-gray-600'}`}>
-                      AHN4 Hillshade
-                    </span>
-                    <div className="ml-auto">
-                      <div
-                        className="w-4 h-4 rounded flex items-center justify-center transition-all"
-                        style={{
-                          backgroundColor: hillshadeVisible ? '#f59e0b' : 'transparent',
-                          border: hillshadeVisible ? '2px solid #f59e0b' : '2px solid #fcd34d'
-                        }}
-                      >
-                        {hillshadeVisible && <Check size={10} className="text-white" strokeWidth={3} />}
-                      </div>
-                    </div>
-                  </button>
-                  {/* Opacity slider - only show when hillshade is visible */}
-                  {hillshadeVisible && (
-                    <div className="mt-2 px-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] text-gray-400">Transparantie</span>
-                        <input
-                          type="range"
-                          min="10"
-                          max="100"
-                          value={hillshadeOpacity * 100}
-                          onChange={(e) => setLayerOpacity('AHN4 Hillshade', parseInt(e.target.value) / 100)}
-                          className="flex-1 h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-amber-500"
-                        />
-                        <span className="text-[10px] text-gray-400 w-7">{Math.round(hillshadeOpacity * 100)}%</span>
-                      </div>
-                    </div>
-                  )}
+                {/* Terrain layers - Hillshade */}
+                <div className="mb-3 pb-2 border-b border-gray-100">
+                  <div className="text-xs font-medium text-amber-600 mb-1.5 px-1 uppercase tracking-wide">Hoogtekaart</div>
+                  <LayerToggle
+                    name="AHN4 Hillshade"
+                    icon={Mountain}
+                    color="#f59e0b"
+                    visible={hillshadeVisible}
+                    opacity={hillshadeOpacity}
+                    onToggle={() => toggleLayer('AHN4 Hillshade')}
+                    onOpacityChange={(val) => setLayerOpacity('AHN4 Hillshade', val)}
+                  />
                 </div>
 
-                {/* Overlay layers */}
-                <div className="text-xs font-medium text-gray-400 mb-1.5 px-1">Vislagen</div>
-                <div className="space-y-0.5">
-                  {LAYER_CONFIG.map((layer) => {
-                    const Icon = layer.icon
-                    const isVisible = visible[layer.name]
+                {/* Water layers - Hydro Overlay */}
+                <div className="mb-3 pb-2 border-b border-gray-100">
+                  <div className="text-xs font-medium text-cyan-600 mb-1.5 px-1 uppercase tracking-wide">Water</div>
+                  <LayerToggle
+                    name="Hydro Overlay"
+                    icon={Droplets}
+                    color="#0891b2"
+                    visible={hydroVisible}
+                    opacity={hydroOpacity}
+                    onToggle={() => toggleLayer('Hydro Overlay')}
+                    onOpacityChange={(val) => setLayerOpacity('Hydro Overlay', val)}
+                  />
+                </div>
 
-                    return (
-                      <button
-                        key={layer.name}
-                        className={`w-full flex items-center gap-2 px-2 py-2 rounded-lg transition-colors border-0 outline-none ${
-                          isVisible
-                            ? 'bg-blue-50'
-                            : 'bg-transparent hover:bg-blue-50'
-                        }`}
-                        onClick={() => toggleLayer(layer.name)}
-                      >
-                        <div
-                          className="w-6 h-6 rounded-md flex items-center justify-center transition-colors"
-                          style={{ backgroundColor: isVisible ? layer.color : '#e5e7eb' }}
+                {/* Fishing layers */}
+                <div>
+                  <div className="text-xs font-medium text-blue-600 mb-1.5 px-1 uppercase tracking-wide">Vislagen</div>
+                  <div className="space-y-0.5">
+                    {VIS_LAYERS.map((layer) => {
+                      const Icon = layer.icon
+                      const isVisible = visible[layer.name]
+
+                      return (
+                        <button
+                          key={layer.name}
+                          className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors border-0 outline-none ${
+                            isVisible
+                              ? 'bg-blue-50'
+                              : 'bg-transparent hover:bg-blue-50'
+                          }`}
+                          onClick={() => toggleLayer(layer.name)}
                         >
-                          <Icon size={14} className="text-white" />
-                        </div>
-                        <span className={`text-sm ${isVisible ? 'text-blue-700' : 'text-gray-600'}`}>
-                          {layer.name}
-                        </span>
-                        <div className="ml-auto">
                           <div
-                            className="w-4 h-4 rounded flex items-center justify-center transition-all"
-                            style={{
-                              backgroundColor: isVisible ? '#3b82f6' : 'transparent',
-                              border: isVisible ? '2px solid #3b82f6' : '2px solid #93c5fd'
-                            }}
+                            className="w-5 h-5 rounded flex items-center justify-center transition-colors"
+                            style={{ backgroundColor: isVisible ? layer.color : '#e5e7eb' }}
                           >
-                            {isVisible && <Check size={10} className="text-white" strokeWidth={3} />}
+                            <Icon size={12} className="text-white" />
                           </div>
-                        </div>
-                      </button>
-                    )
-                  })}
+                          <span className={`text-sm ${isVisible ? 'text-blue-700' : 'text-gray-600'}`}>
+                            {layer.name}
+                          </span>
+                          <div className="ml-auto">
+                            <div
+                              className="w-4 h-4 rounded-sm flex items-center justify-center transition-all"
+                              style={{
+                                backgroundColor: isVisible ? layer.color : 'white',
+                                border: `2px solid ${isVisible ? layer.color : '#d1d5db'}`
+                              }}
+                            >
+                              {isVisible && <Check size={10} className="text-white" strokeWidth={3} />}
+                            </div>
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
                 </div>
               </div>
             </motion.div>
@@ -217,5 +206,66 @@ export function LayerPanel() {
         )}
       </AnimatePresence>
     </>
+  )
+}
+
+interface LayerToggleProps {
+  name: string
+  icon: React.ComponentType<{ size?: number; className?: string }>
+  color: string
+  visible: boolean
+  opacity: number
+  onToggle: () => void
+  onOpacityChange: (value: number) => void
+}
+
+function LayerToggle({ name, icon: Icon, color, visible, opacity, onToggle, onOpacityChange }: LayerToggleProps) {
+  return (
+    <div>
+      <button
+        className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors border-0 outline-none ${
+          visible ? 'bg-gray-50' : 'bg-transparent hover:bg-gray-50'
+        }`}
+        onClick={onToggle}
+      >
+        <div
+          className="w-5 h-5 rounded flex items-center justify-center transition-colors"
+          style={{ backgroundColor: visible ? color : '#e5e7eb' }}
+        >
+          <Icon size={12} className="text-white" />
+        </div>
+        <span className={`text-sm ${visible ? 'text-gray-800' : 'text-gray-600'}`}>
+          {name}
+        </span>
+        <div className="ml-auto">
+          <div
+            className="w-4 h-4 rounded-sm flex items-center justify-center transition-all"
+            style={{
+              backgroundColor: visible ? color : 'white',
+              border: `2px solid ${visible ? color : '#d1d5db'}`
+            }}
+          >
+            {visible && <Check size={10} className="text-white" strokeWidth={3} />}
+          </div>
+        </div>
+      </button>
+      {visible && (
+        <div className="mt-1 px-2 pb-1">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] text-gray-400 w-16">Transparantie</span>
+            <input
+              type="range"
+              min="10"
+              max="100"
+              value={opacity * 100}
+              onChange={(e) => onOpacityChange(parseInt(e.target.value) / 100)}
+              className="flex-1 h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+              style={{ accentColor: color }}
+            />
+            <span className="text-[10px] text-gray-400 w-6 text-right">{Math.round(opacity * 100)}%</span>
+          </div>
+        </div>
+      )}
+    </div>
   )
 }

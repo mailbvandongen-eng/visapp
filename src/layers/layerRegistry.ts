@@ -47,6 +47,14 @@ export const layerRegistry: Record<string, LayerDefinition> = {
       return createAHN4MultiHillshadeLayer()
     },
     immediateLoad: true
+  },
+  'Hydro Overlay': {
+    name: 'Hydro Overlay',
+    factory: async () => {
+      const { createHydroOverlayLayer } = await import('./hydroOverlayOL')
+      return createHydroOverlayLayer()
+    },
+    immediateLoad: true
   }
 }
 
