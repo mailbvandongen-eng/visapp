@@ -7,6 +7,7 @@ export type LocationSource = 'gps' | 'map' | 'photo'
 interface UIState {
   // Panel states
   layerControlOpen: boolean
+  layerPanelOpen: boolean
   settingsPanelOpen: boolean
   infoPanelOpen: boolean
 
@@ -31,6 +32,7 @@ interface UIState {
   // Actions
   closeAllPanels: () => void
   toggleLayerControl: () => void
+  toggleLayerPanel: () => void
   toggleSettingsPanel: () => void
   toggleInfoPanel: () => void
   toggleCategory: (category: string) => void
@@ -56,6 +58,7 @@ interface UIState {
 export const useUIStore = create<UIState>()(
   immer((set) => ({
     layerControlOpen: false,
+    layerPanelOpen: false,
     settingsPanelOpen: false,
     infoPanelOpen: false,
     catchFormOpen: false,
@@ -71,6 +74,7 @@ export const useUIStore = create<UIState>()(
 
     closeAllPanels: () => {
       set(state => {
+        state.layerPanelOpen = false
         state.settingsPanelOpen = false
         state.infoPanelOpen = false
         state.weatherPanelOpen = false
@@ -83,9 +87,22 @@ export const useUIStore = create<UIState>()(
       })
     },
 
+    toggleLayerPanel: () => {
+      set(state => {
+        const wasOpen = state.layerPanelOpen
+        // Close all panels first
+        state.layerPanelOpen = false
+        state.settingsPanelOpen = false
+        state.infoPanelOpen = false
+        state.weatherPanelOpen = false
+        if (!wasOpen) state.layerPanelOpen = true
+      })
+    },
+
     toggleSettingsPanel: () => {
       set(state => {
         const wasOpen = state.settingsPanelOpen
+        state.layerPanelOpen = false
         state.settingsPanelOpen = false
         state.infoPanelOpen = false
         state.weatherPanelOpen = false
@@ -96,6 +113,7 @@ export const useUIStore = create<UIState>()(
     toggleInfoPanel: () => {
       set(state => {
         const wasOpen = state.infoPanelOpen
+        state.layerPanelOpen = false
         state.settingsPanelOpen = false
         state.infoPanelOpen = false
         state.weatherPanelOpen = false
@@ -160,6 +178,7 @@ export const useUIStore = create<UIState>()(
     toggleWeatherPanel: () => {
       set(state => {
         const wasOpen = state.weatherPanelOpen
+        state.layerPanelOpen = false
         state.settingsPanelOpen = false
         state.infoPanelOpen = false
         state.weatherPanelOpen = false

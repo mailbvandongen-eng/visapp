@@ -39,6 +39,14 @@ export const layerRegistry: Record<string, LayerDefinition> = {
       return createViswaterLayer()
     },
     immediateLoad: false
+  },
+  'AHN4 Hillshade': {
+    name: 'AHN4 Hillshade',
+    factory: async () => {
+      const { createAHN4MultiHillshadeLayer } = await import('./hillshadeLayers')
+      return createAHN4MultiHillshadeLayer()
+    },
+    immediateLoad: true
   }
 }
 

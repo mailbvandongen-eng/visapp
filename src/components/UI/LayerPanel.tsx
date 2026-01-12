@@ -1,7 +1,6 @@
-import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Layers, Anchor, Ship, Waves, MapPin, Check, Tag } from 'lucide-react'
-import { useLayerStore } from '../../store'
+import { Layers, Anchor, Ship, Waves, MapPin, Check, Tag, Mountain } from 'lucide-react'
+import { useLayerStore, useUIStore } from '../../store'
 
 const LAYER_CONFIG = [
   { name: 'Aanlegsteigers', icon: Anchor, color: '#2196F3' },
@@ -17,10 +16,13 @@ const BASE_LAYERS = [
 ]
 
 export function LayerPanel() {
-  const [isOpen, setIsOpen] = useState(false)
+  const layerPanelOpen = useUIStore(state => state.layerPanelOpen)
+  const toggleLayerPanel = useUIStore(state => state.toggleLayerPanel)
   const visible = useLayerStore(state => state.visible)
+  const opacity = useLayerStore(state => state.opacity)
   const toggleLayer = useLayerStore(state => state.toggleLayer)
   const setLayerVisibility = useLayerStore(state => state.setLayerVisibility)
+  const setLayerOpacity = useLayerStore(state => state.setLayerOpacity)
 
   const handleBaseLayerChange = (layerName: string) => {
     BASE_LAYERS.forEach(layer => {
@@ -38,12 +40,15 @@ export function LayerPanel() {
     setLayerVisibility('Labels Overlay', !visible['Labels Overlay'])
   }
 
+  const hillshadeOpacity = opacity['AHN4 Hillshade'] ?? 0.5
+  const hillshadeVisible = visible['AHN4 Hillshade']
+
   return (
-    <div className="fixed bottom-[60px] right-2 z-[900]">
+    <div className="fixed top-2 right-14 z-[900]">
       {/* Toggle button */}
       <motion.button
         className="w-11 h-11 bg-white/90 hover:bg-white backdrop-blur-sm rounded-xl shadow-sm flex items-center justify-center text-gray-600 border-0 outline-none transition-colors"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={toggleLayerPanel}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         title="Kaartlagen"
@@ -53,7 +58,7 @@ export function LayerPanel() {
 
       {/* Panel */}
       <AnimatePresence>
-        {isOpen && (
+        {layerPanelOpen && (
           <>
             {/* Backdrop */}
             <motion.div
@@ -61,13 +66,13 @@ export function LayerPanel() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => setIsOpen(false)}
+              onClick={toggleLayerPanel}
             />
             <motion.div
-              className="absolute bottom-12 right-0 bg-white rounded-xl shadow-lg overflow-hidden min-w-[200px]"
-              initial={{ opacity: 0, y: 10, scale: 0.95 }}
+              className="absolute top-12 right-0 bg-white rounded-xl shadow-lg overflow-hidden min-w-[220px]"
+              initial={{ opacity: 0, y: -10, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 10, scale: 0.95 }}
+              exit={{ opacity: 0, y: -10, scale: 0.95 }}
             >
               {/* Header */}
               <div className="px-3 py-2 bg-gradient-to-r from-blue-500 to-blue-600">
@@ -112,8 +117,59 @@ export function LayerPanel() {
                   )}
                 </div>
 
+                {/* AHN4 Hillshade with opacity slider */}
+                <div className="mb-2 pb-2 border-b border-gray-100">
+                  <div className="text-xs font-medium text-gray-400 mb-1.5 px-1">Hoogtekaart</div>
+                  <button
+                    className={`w-full flex items-center gap-2 px-2 py-2 rounded-lg transition-colors border-0 outline-none ${
+                      hillshadeVisible
+                        ? 'bg-amber-50'
+                        : 'bg-transparent hover:bg-amber-50'
+                    }`}
+                    onClick={() => toggleLayer('AHN4 Hillshade')}
+                  >
+                    <div
+                      className="w-6 h-6 rounded-md flex items-center justify-center transition-colors"
+                      style={{ backgroundColor: hillshadeVisible ? '#f59e0b' : '#e5e7eb' }}
+                    >
+                      <Mountain size={14} className="text-white" />
+                    </div>
+                    <span className={`text-sm ${hillshadeVisible ? 'text-amber-700' : 'text-gray-600'}`}>
+                      AHN4 Hillshade
+                    </span>
+                    <div className="ml-auto">
+                      <div
+                        className="w-4 h-4 rounded flex items-center justify-center transition-all"
+                        style={{
+                          backgroundColor: hillshadeVisible ? '#f59e0b' : 'transparent',
+                          border: hillshadeVisible ? '2px solid #f59e0b' : '2px solid #fcd34d'
+                        }}
+                      >
+                        {hillshadeVisible && <Check size={10} className="text-white" strokeWidth={3} />}
+                      </div>
+                    </div>
+                  </button>
+                  {/* Opacity slider - only show when hillshade is visible */}
+                  {hillshadeVisible && (
+                    <div className="mt-2 px-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] text-gray-400">Transparantie</span>
+                        <input
+                          type="range"
+                          min="10"
+                          max="100"
+                          value={hillshadeOpacity * 100}
+                          onChange={(e) => setLayerOpacity('AHN4 Hillshade', parseInt(e.target.value) / 100)}
+                          className="flex-1 h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                        />
+                        <span className="text-[10px] text-gray-400 w-7">{Math.round(hillshadeOpacity * 100)}%</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 {/* Overlay layers */}
-                <div className="text-xs font-medium text-gray-400 mb-1.5 px-1">Kaartlagen</div>
+                <div className="text-xs font-medium text-gray-400 mb-1.5 px-1">Vislagen</div>
                 <div className="space-y-0.5">
                   {LAYER_CONFIG.map((layer) => {
                     const Icon = layer.icon
