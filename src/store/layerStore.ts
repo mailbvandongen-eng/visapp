@@ -23,20 +23,24 @@ export const useLayerStore = create<LayerState>()(
   immer((set, get) => ({
     // Initial visibility - vis layers
     visible: {
-      'OpenStreetMap': true,
+      'CartoDB Light': true,
+      'OpenStreetMap': false,
       'Luchtfoto': false,
+      'Terrein': false,
       'Labels Overlay': false,
       'Aanlegsteigers': false,
-      'Boothellingen': false,
+      'Trailerhellingen': false,
       'Dieptekaart': false,
       'Viswater': false,
+      'PDOK Water NL': true,  // Water overlay visible by default
       'Mijn Vangsten': true,
       'Favoriete Plekken': true
     },
 
     opacity: {
       'Dieptekaart': 0.7,
-      'Viswater': 0.5
+      'Viswater': 0.5,
+      'PDOK Water NL': 0.6
     },
 
     loadingState: {},

@@ -45,20 +45,73 @@ export function Popup() {
           if (website) content += `<br/><a href="${website}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline text-sm">Website</a>`
         }
 
-        else if (layerTitle === 'Boothellingen' || props.layerType === 'boothelling') {
-          const name = props.name || 'Boothelling'
+        else if (layerTitle === 'Trailerhellingen' || props.layerType === 'trailerhelling') {
+          const name = props.name || null
           const operator = props.operator || ''
           const access = props.access || ''
           const fee = props.fee || ''
           const surface = props.surface || ''
           const website = props.website || ''
+          const description = props.description || ''
+          const openingHours = props.opening_hours || ''
 
-          content = `<strong class="text-green-800">${name}</strong>`
+          // Determine fee status with colored badge
+          let feeLabel = ''
+          if (fee === 'no') {
+            feeLabel = '<span class="inline-block px-2 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded-full">Gratis</span>'
+          } else if (fee === 'yes') {
+            feeLabel = '<span class="inline-block px-2 py-0.5 bg-orange-100 text-orange-700 text-xs font-medium rounded-full">Betaald</span>'
+          } else if (fee) {
+            feeLabel = `<span class="inline-block px-2 py-0.5 bg-orange-100 text-orange-700 text-xs font-medium rounded-full">${fee}</span>`
+          }
+
+          // Title with optional name
+          if (name) {
+            content = `<strong class="text-green-800 text-lg">${name}</strong>`
+            if (feeLabel) content += ` ${feeLabel}`
+          } else {
+            content = `<strong class="text-green-800 text-lg">Trailerhelling</strong>`
+            if (feeLabel) content += ` ${feeLabel}`
+          }
+
+          // Access info
+          if (access) {
+            const accessLabel = access === 'yes' || access === 'public' || access === 'permissive'
+              ? 'Openbaar'
+              : access === 'private'
+                ? 'Privé'
+                : access === 'customers'
+                  ? 'Alleen klanten'
+                  : access
+            content += `<br/><span class="text-sm text-gray-600">Toegang: ${accessLabel}</span>`
+          }
+
+          // Operator
           if (operator) content += `<br/><span class="text-sm text-gray-600">Beheerder: ${operator}</span>`
-          if (access) content += `<br/><span class="text-sm text-gray-600">Toegang: ${access === 'yes' || access === 'public' ? 'Openbaar' : access === 'private' ? 'Privé' : access}</span>`
-          if (fee) content += `<br/><span class="text-sm text-gray-600">Kosten: ${fee === 'yes' ? 'Betaald' : fee === 'no' ? 'Gratis' : fee}</span>`
-          if (surface) content += `<br/><span class="text-sm text-gray-600">Ondergrond: ${surface}</span>`
-          if (website) content += `<br/><a href="${website}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline text-sm">Website</a>`
+
+          // Surface type
+          if (surface) {
+            const surfaceLabels: Record<string, string> = {
+              'concrete': 'Beton',
+              'asphalt': 'Asfalt',
+              'gravel': 'Grind',
+              'paved': 'Verhard',
+              'unpaved': 'Onverhard',
+              'grass': 'Gras',
+              'sand': 'Zand',
+              'wood': 'Hout'
+            }
+            content += `<br/><span class="text-sm text-gray-600">Ondergrond: ${surfaceLabels[surface] || surface}</span>`
+          }
+
+          // Opening hours
+          if (openingHours) content += `<br/><span class="text-sm text-gray-600">Openingstijden: ${openingHours}</span>`
+
+          // Description
+          if (description) content += `<br/><span class="text-sm text-gray-500 italic">${description}</span>`
+
+          // Website
+          if (website) content += `<br/><a href="${website}" target="_blank" rel="noopener noreferrer" class="text-green-600 hover:underline text-sm">Website</a>`
         }
 
         else if (layerTitle === 'Viswater' || props.layerType === 'viswater') {

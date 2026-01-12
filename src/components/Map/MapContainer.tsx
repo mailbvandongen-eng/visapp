@@ -6,7 +6,7 @@ import { useMap } from '../../hooks/useMap'
 import { useLayerStore, useMapStore, useSettingsStore, useGPSStore } from '../../store'
 import { getImmediateLoadLayers } from '../../layers/layerRegistry'
 
-const BASE_LAYERS = ['OpenStreetMap', 'Luchtfoto', 'Terrein']
+const BASE_LAYERS = ['OpenStreetMap', 'Luchtfoto', 'Terrein', 'CartoDB Light']
 
 export function MapContainer() {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -25,13 +25,25 @@ export function MapContainer() {
 
     console.log('Initializing map layers...')
 
-    // Get the saved background preference - default to Terrein (hillshade + light)
-    const bgSetting = useSettingsStore.getState().defaultBackground || 'Terrein'
+    // Get the saved background preference - default to CartoDB Light
+    const bgSetting = useSettingsStore.getState().defaultBackground || 'CartoDB Light'
     const showOSM = bgSetting === 'OpenStreetMap'
     const showSatellite = bgSetting === 'Luchtfoto'
     const showTerrein = bgSetting === 'Terrein'
+    const showCartoLight = bgSetting === 'CartoDB Light'
 
     console.log('Background setting:', bgSetting)
+
+    // CartoDB Positron (Light) - clean light grey map
+    const cartoLightLayer = new TileLayer({
+      properties: { title: 'CartoDB Light', type: 'base' },
+      visible: showCartoLight,
+      source: new XYZ({
+        url: 'https://{a-d}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+        attributions: '© OpenStreetMap contributors © CARTO',
+        maxZoom: 20
+      })
+    })
 
     // OpenTopoMap - terrain with hillshade and blue water
     const terreinLayer = new TileLayer({
@@ -72,18 +84,21 @@ export function MapContainer() {
       })
     })
 
-    // Add layers in correct order
+    // Add layers in correct order (first added = bottom)
+    map.addLayer(cartoLightLayer)
     map.addLayer(terreinLayer)
     map.addLayer(osmLayer)
     map.addLayer(satelliteLayer)
     map.addLayer(labelsOverlay)
 
+    registerLayer('CartoDB Light', cartoLightLayer)
     registerLayer('Terrein', terreinLayer)
     registerLayer('OpenStreetMap', osmLayer)
     registerLayer('Luchtfoto', satelliteLayer)
     registerLayer('Labels Overlay', labelsOverlay)
 
     // Also update the layer store visibility to match
+    setLayerVisibility('CartoDB Light', showCartoLight)
     setLayerVisibility('Terrein', showTerrein)
     setLayerVisibility('OpenStreetMap', showOSM)
     setLayerVisibility('Luchtfoto', showSatellite)

@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
-export type DefaultBackground = 'OpenStreetMap' | 'Luchtfoto' | 'Terrein'
+export type DefaultBackground = 'OpenStreetMap' | 'Luchtfoto' | 'Terrein' | 'CartoDB Light'
 export type WidgetId = 'wind' | 'tide' | 'forecast' | 'waterData'
 
 interface SettingsState {
@@ -43,7 +43,7 @@ interface SettingsState {
 export const useSettingsStore = create<SettingsState>()(
   persist(
     (set) => ({
-      defaultBackground: 'Terrein',
+      defaultBackground: 'CartoDB Light',
       showScaleBar: true,
       gpsAutoStart: false,
       showAccuracyCircle: true,
@@ -79,14 +79,14 @@ export const useSettingsStore = create<SettingsState>()(
     }),
     {
       name: 'visapp-settings',
-      version: 2,
+      version: 3,
       migrate: (persistedState: unknown, version: number) => {
         const state = persistedState as Partial<SettingsState>
-        // Migrate from version 1 (or no version) to version 2: change default to Terrein
-        if (version < 2) {
+        // Migrate to version 3: change default to CartoDB Light with water overlay
+        if (version < 3) {
           return {
             ...state,
-            defaultBackground: 'Terrein'
+            defaultBackground: 'CartoDB Light'
           }
         }
         return state

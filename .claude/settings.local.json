@@ -33,7 +33,9 @@
       "WebFetch(domain:rijkswaterstaatdata.nl)",
       "WebFetch(domain:github.com)",
       "WebFetch(domain:api.le-systeme-solaire.net)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "WebFetch(domain:service.pdok.nl)",
+      "Bash(del \"C:\\VSCode\\visapp\\src\\layers\\hydroOverlayOL.ts\")"
     ]
   }
 }

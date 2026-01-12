@@ -4,12 +4,13 @@ import { useLayerStore, useUIStore } from '../../store'
 
 const VIS_LAYERS = [
   { name: 'Aanlegsteigers', icon: Anchor, color: '#2196F3' },
-  { name: 'Boothellingen', icon: Ship, color: '#4CAF50' },
+  { name: 'Trailerhellingen', icon: Ship, color: '#4CAF50' },
   { name: 'Dieptekaart', icon: Waves, color: '#00BCD4' },
   { name: 'Viswater', icon: MapPin, color: '#9C27B0' }
 ]
 
 const BASE_LAYERS = [
+  { name: 'CartoDB Light', label: 'Light' },
   { name: 'Terrein', label: 'Terrein' },
   { name: 'OpenStreetMap', label: 'Kaart' },
   { name: 'Luchtfoto', label: 'Satelliet' }
@@ -41,8 +42,6 @@ export function LayerPanel() {
 
   const hillshadeOpacity = opacity['AHN4 Hillshade'] ?? 0.5
   const hillshadeVisible = visible['AHN4 Hillshade']
-  const hydroOpacity = opacity['Hydro Overlay'] ?? 0.8
-  const hydroVisible = visible['Hydro Overlay']
   const pdokWaterOpacity = opacity['PDOK Water NL'] ?? 0.7
   const pdokWaterVisible = visible['PDOK Water NL']
 
@@ -149,18 +148,8 @@ export function LayerPanel() {
                 <div className="mb-3 pb-2 border-b border-gray-100">
                   <div className="text-xs font-medium text-cyan-600 mb-1.5 px-1 uppercase tracking-wide">Water</div>
                   <LayerToggle
-                    name="Hydro Overlay"
-                    label="Hydro (globaal)"
-                    icon={Droplets}
-                    color="#0891b2"
-                    visible={hydroVisible}
-                    opacity={hydroOpacity}
-                    onToggle={() => toggleLayer('Hydro Overlay')}
-                    onOpacityChange={(val) => setLayerOpacity('Hydro Overlay', val)}
-                  />
-                  <LayerToggle
                     name="PDOK Water NL"
-                    label="Water NL (detail)"
+                    label="Waterlopen NL"
                     icon={Droplets}
                     color="#0284c7"
                     visible={pdokWaterVisible}
