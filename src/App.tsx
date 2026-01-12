@@ -16,21 +16,28 @@ import { SpotMarkers } from './components/Spots/SpotMarkers'
 import { AddSpotForm } from './components/Spots/AddSpotForm'
 import { LayerPanel } from './components/UI/LayerPanel'
 import { SettingsPanel } from './components/UI/SettingsPanel'
+import { Popup } from './components/Map/Popup'
 import { PasswordGate } from './components/Auth/PasswordGate'
-import { useUIStore } from './store'
+import { useUIStore, useSettingsStore } from './store'
 
 function App() {
   const spotFormOpen = useUIStore(state => state.spotFormOpen)
   const spotFormLocation = useUIStore(state => state.spotFormLocation)
   const closeSpotForm = useUIStore(state => state.closeSpotForm)
 
+  // Get font scale setting (80-150%)
+  const fontScale = useSettingsStore(state => state.fontScale)
+  // Base size is 14px, scale it based on setting
+  const baseFontSize = 14 * fontScale / 100
+
   return (
     <PasswordGate>
-      <div className="h-screen w-screen overflow-hidden">
+      <div className="h-screen w-screen overflow-hidden" style={{ fontSize: `${baseFontSize}px` }}>
         <MapContainer />
         <GpsMarker />
         <CatchMarkers />
         <SpotMarkers />
+        <Popup />
         <LongPressMenu />
 
         {/* Top bar: Weather (left), Search & Menu (right) */}

@@ -44,32 +44,34 @@ export function LayerPanel() {
   const hillshadeVisible = visible['AHN4 Hillshade']
 
   return (
-    <div className="fixed top-2 right-14 z-[900]">
-      {/* Toggle button */}
-      <motion.button
-        className="w-11 h-11 bg-white/90 hover:bg-white backdrop-blur-sm rounded-xl shadow-sm flex items-center justify-center text-gray-600 border-0 outline-none transition-colors"
-        onClick={toggleLayerPanel}
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        title="Kaartlagen"
-      >
-        <Layers size={22} />
-      </motion.button>
+    <>
+      {/* Toggle button - stays at bottom */}
+      <div className="fixed bottom-[60px] right-2 z-[900]">
+        <motion.button
+          className="w-11 h-11 bg-white/90 hover:bg-white backdrop-blur-sm rounded-xl shadow-sm flex items-center justify-center text-gray-600 border-0 outline-none transition-colors"
+          onClick={toggleLayerPanel}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          title="Kaartlagen"
+        >
+          <Layers size={22} />
+        </motion.button>
+      </div>
 
-      {/* Panel */}
+      {/* Panel - appears at top right */}
       <AnimatePresence>
         {layerPanelOpen && (
           <>
             {/* Backdrop */}
             <motion.div
-              className="fixed inset-0 z-[-1]"
+              className="fixed inset-0 z-[1000]"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={toggleLayerPanel}
             />
             <motion.div
-              className="absolute top-12 right-0 bg-white rounded-xl shadow-lg overflow-hidden min-w-[220px]"
+              className="fixed top-2 right-2 z-[1001] bg-white rounded-xl shadow-lg overflow-hidden min-w-[220px]"
               initial={{ opacity: 0, y: -10, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -10, scale: 0.95 }}
@@ -214,6 +216,6 @@ export function LayerPanel() {
           </>
         )}
       </AnimatePresence>
-    </div>
+    </>
   )
 }
