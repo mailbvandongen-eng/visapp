@@ -43,6 +43,8 @@ export function LayerPanel() {
   const hillshadeVisible = visible['AHN4 Hillshade']
   const hydroOpacity = opacity['Hydro Overlay'] ?? 0.8
   const hydroVisible = visible['Hydro Overlay']
+  const pdokWaterOpacity = opacity['PDOK Water NL'] ?? 0.7
+  const pdokWaterVisible = visible['PDOK Water NL']
 
   return (
     <>
@@ -143,17 +145,28 @@ export function LayerPanel() {
                   />
                 </div>
 
-                {/* Water layers - Hydro Overlay */}
+                {/* Water layers */}
                 <div className="mb-3 pb-2 border-b border-gray-100">
                   <div className="text-xs font-medium text-cyan-600 mb-1.5 px-1 uppercase tracking-wide">Water</div>
                   <LayerToggle
                     name="Hydro Overlay"
+                    label="Hydro (globaal)"
                     icon={Droplets}
                     color="#0891b2"
                     visible={hydroVisible}
                     opacity={hydroOpacity}
                     onToggle={() => toggleLayer('Hydro Overlay')}
                     onOpacityChange={(val) => setLayerOpacity('Hydro Overlay', val)}
+                  />
+                  <LayerToggle
+                    name="PDOK Water NL"
+                    label="Water NL (detail)"
+                    icon={Droplets}
+                    color="#0284c7"
+                    visible={pdokWaterVisible}
+                    opacity={pdokWaterOpacity}
+                    onToggle={() => toggleLayer('PDOK Water NL')}
+                    onOpacityChange={(val) => setLayerOpacity('PDOK Water NL', val)}
                   />
                 </div>
 
@@ -211,6 +224,7 @@ export function LayerPanel() {
 
 interface LayerToggleProps {
   name: string
+  label?: string
   icon: React.ComponentType<{ size?: number; className?: string }>
   color: string
   visible: boolean
@@ -219,7 +233,8 @@ interface LayerToggleProps {
   onOpacityChange: (value: number) => void
 }
 
-function LayerToggle({ name, icon: Icon, color, visible, opacity, onToggle, onOpacityChange }: LayerToggleProps) {
+function LayerToggle({ name, label, icon: Icon, color, visible, opacity, onToggle, onOpacityChange }: LayerToggleProps) {
+  const displayName = label || name
   return (
     <div>
       <button
@@ -235,7 +250,7 @@ function LayerToggle({ name, icon: Icon, color, visible, opacity, onToggle, onOp
           <Icon size={12} className="text-white" />
         </div>
         <span className={`text-sm ${visible ? 'text-gray-800' : 'text-gray-600'}`}>
-          {name}
+          {displayName}
         </span>
         <div className="ml-auto">
           <div

@@ -55,6 +55,14 @@ export const layerRegistry: Record<string, LayerDefinition> = {
       return createHydroOverlayLayer()
     },
     immediateLoad: true
+  },
+  'PDOK Water NL': {
+    name: 'PDOK Water NL',
+    factory: async () => {
+      const { createPDOKWaterLayer } = await import('./pdokWaterOL')
+      return createPDOKWaterLayer()
+    },
+    immediateLoad: true
   }
 }
 

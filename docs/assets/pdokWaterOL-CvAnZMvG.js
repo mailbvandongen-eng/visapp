@@ -1,0 +1,2 @@
+import{T as e}from"./index-i7xsr2DC.js";import{T as r}from"./TileWMS-voHcsKic.js";import"./common-DpNHzTjJ.js";function p(){return new e({properties:{title:"PDOK Water NL",type:"wms"},visible:!1,opacity:.7,source:new r({url:"https://service.pdok.nl/hwh/hydrografie/wms/v1_0",params:{LAYERS:"waterlopen,wateroppervlakken",TILED:!0,FORMAT:"image/png",TRANSPARENT:!0},attributions:"© Het Waterschapshuis / PDOK"})})}export{p as createPDOKWaterLayer};
+//# sourceMappingURL=pdokWaterOL-CvAnZMvG.js.map

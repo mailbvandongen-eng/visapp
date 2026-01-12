@@ -1,0 +1,2 @@
+import{T as e,ay as r}from"./index-i7xsr2DC.js";function s(){return new e({properties:{title:"Hydro Overlay",type:"overlay"},visible:!1,opacity:.8,source:new r({url:"https://tiles.arcgis.com/tiles/P3ePLMYs2RVChkJx/arcgis/rest/services/Esri_Hydro_Reference_Overlay/MapServer/tile/{z}/{y}/{x}",attributions:"© Esri - Hydro Reference Overlay",maxZoom:19})})}export{s as createHydroOverlayLayer};
+//# sourceMappingURL=hydroOverlayOL-BNjDct5G.js.map
