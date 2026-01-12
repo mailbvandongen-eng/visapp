@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, ChevronLeft, ChevronRight, Navigation2 } from 'lucide-react'
+import { X, ChevronLeft, ChevronRight, ExternalLink, PersonStanding } from 'lucide-react'
 import { toLonLat } from 'ol/proj'
 import { useMapStore } from '../../store'
 import type { MapBrowserEvent } from 'ol'

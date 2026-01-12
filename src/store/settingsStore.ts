@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
 export type DefaultBackground = 'OpenStreetMap' | 'Luchtfoto' | 'Terrein' | 'CartoDB Light'
-export type WidgetId = 'wind' | 'tide' | 'forecast' | 'waterData'
+export type WidgetId = 'weather' | 'wind' | 'tide' | 'buienradar' | 'waterflow' | 'forecast' | 'waterData'
 
 interface SettingsState {
   defaultBackground: DefaultBackground
@@ -13,14 +13,17 @@ interface SettingsState {
   showCatchButton: boolean
   showCatches: boolean
   showFavoriteSpots: boolean
+  // Widget visibility settings
   showWeatherWidget: boolean
   showWindIndicator: boolean
   showTideWidget: boolean
+  showBuienradarWidget: boolean
+  showWaterflowWidget: boolean
   showForecastSlider: boolean
   showWaterDataWidget: boolean
   widgetOrder: WidgetId[]
-  fontScale: number  // 80-150, percentage scale for app text
-  showFontSliders: boolean  // Show/hide font size sliders
+  fontScale: number
+  showFontSliders: boolean
 
   setDefaultBackground: (bg: DefaultBackground) => void
   setShowScaleBar: (value: boolean) => void
@@ -33,6 +36,8 @@ interface SettingsState {
   setShowWeatherWidget: (value: boolean) => void
   setShowWindIndicator: (value: boolean) => void
   setShowTideWidget: (value: boolean) => void
+  setShowBuienradarWidget: (value: boolean) => void
+  setShowWaterflowWidget: (value: boolean) => void
   setShowForecastSlider: (value: boolean) => void
   setShowWaterDataWidget: (value: boolean) => void
   setWidgetOrder: (order: WidgetId[]) => void
@@ -54,11 +59,13 @@ export const useSettingsStore = create<SettingsState>()(
       showWeatherWidget: true,
       showWindIndicator: false,
       showTideWidget: false,
+      showBuienradarWidget: false,
+      showWaterflowWidget: false,
       showForecastSlider: false,
       showWaterDataWidget: false,
-      widgetOrder: ['wind', 'tide', 'forecast', 'waterData'],
-      fontScale: 100,  // Default 100%
-      showFontSliders: false,  // Hidden by default
+      widgetOrder: ['weather', 'wind', 'tide', 'buienradar', 'waterflow', 'forecast', 'waterData'],
+      fontScale: 100,
+      showFontSliders: false,
 
       setDefaultBackground: (defaultBackground) => set({ defaultBackground }),
       setShowScaleBar: (showScaleBar) => set({ showScaleBar }),
@@ -71,6 +78,8 @@ export const useSettingsStore = create<SettingsState>()(
       setShowWeatherWidget: (showWeatherWidget) => set({ showWeatherWidget }),
       setShowWindIndicator: (showWindIndicator) => set({ showWindIndicator }),
       setShowTideWidget: (showTideWidget) => set({ showTideWidget }),
+      setShowBuienradarWidget: (showBuienradarWidget) => set({ showBuienradarWidget }),
+      setShowWaterflowWidget: (showWaterflowWidget) => set({ showWaterflowWidget }),
       setShowForecastSlider: (showForecastSlider) => set({ showForecastSlider }),
       setShowWaterDataWidget: (showWaterDataWidget) => set({ showWaterDataWidget }),
       setWidgetOrder: (widgetOrder) => set({ widgetOrder }),

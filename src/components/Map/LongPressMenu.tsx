@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, MapPin, ExternalLink, Fish, PersonStanding, Camera, Cloud, ChevronRight, Wind, Waves, BarChart3 } from 'lucide-react'
+import { X, MapPin, ExternalLink, Fish, PersonStanding, Camera, Cloud, ChevronRight, Wind, Waves, CloudRain, Droplets, BarChart3, Thermometer } from 'lucide-react'
 import { toLonLat } from 'ol/proj'
 import { useMapStore, useUIStore, useSettingsStore } from '../../store'
 import { extractGPSFromPhoto } from '../../lib/exifUtils'
@@ -23,6 +23,10 @@ export function LongPressMenu() {
   const setShowWindIndicator = useSettingsStore(state => state.setShowWindIndicator)
   const showTideWidget = useSettingsStore(state => state.showTideWidget)
   const setShowTideWidget = useSettingsStore(state => state.setShowTideWidget)
+  const showBuienradarWidget = useSettingsStore(state => state.showBuienradarWidget)
+  const setShowBuienradarWidget = useSettingsStore(state => state.setShowBuienradarWidget)
+  const showWaterflowWidget = useSettingsStore(state => state.showWaterflowWidget)
+  const setShowWaterflowWidget = useSettingsStore(state => state.setShowWaterflowWidget)
   const showForecastSlider = useSettingsStore(state => state.showForecastSlider)
   const setShowForecastSlider = useSettingsStore(state => state.setShowForecastSlider)
 
@@ -40,8 +44,8 @@ export function LongPressMenu() {
     const viewport = map.getViewport()
     if (!viewport) return
 
-    const LONG_PRESS_DURATION = 600 // ms
-    const MOVE_THRESHOLD = 15 // pixels
+    const LONG_PRESS_DURATION = 600
+    const MOVE_THRESHOLD = 15
 
     const handleTouchStart = (e: TouchEvent) => {
       if (e.touches.length !== 1) return
@@ -231,10 +235,7 @@ export function LongPressMenu() {
     if (!file || !menuLocation) return
 
     try {
-      // Try to extract GPS from photo
       const gpsFromPhoto = await extractGPSFromPhoto(file)
-
-      // Process the image for storage
       const { thumbnailBase64 } = await processImageForUpload(file)
       const photo: PhotoData = {
         id: generatePhotoId(),
@@ -243,7 +244,6 @@ export function LongPressMenu() {
         pendingUpload: true
       }
 
-      // Use EXIF location if available, otherwise use long press location
       if (gpsFromPhoto) {
         openCatchForm({
           location: gpsFromPhoto,
@@ -260,12 +260,10 @@ export function LongPressMenu() {
       }
     } catch (error) {
       console.error('Failed to process photo:', error)
-      // Fallback to just opening with map location
       const [lng, lat] = menuLocation.coordinate
       openCatchForm({ location: { lat, lng }, locationSource: 'map' })
     }
 
-    // Reset input
     e.target.value = ''
     forceClose()
   }
@@ -291,6 +289,38 @@ export function LongPressMenu() {
     return `${lat.toFixed(5)}°N, ${lng.toFixed(5)}°E`
   }
 
+  // Calculate menu position to prevent going off-screen
+  const getMenuStyle = () => {
+    if (!menuLocation) return {}
+
+    const menuWidth = 220
+    const baseMenuHeight = 340
+    const submenuHeight = 280
+    const menuHeight = showWidgetsSubmenu ? baseMenuHeight + submenuHeight : baseMenuHeight
+
+    // Horizontal position - ensure menu stays within screen
+    let left = menuLocation.pixel[0]
+    if (left + menuWidth > window.innerWidth) {
+      left = window.innerWidth - menuWidth - 10
+    }
+    if (left < 10) left = 10
+
+    // Vertical position - check if there's space below or above
+    let top = menuLocation.pixel[1]
+    const spaceBelow = window.innerHeight - menuLocation.pixel[1]
+    const spaceAbove = menuLocation.pixel[1]
+
+    if (spaceBelow < menuHeight && spaceAbove > menuHeight) {
+      // Position above click point
+      top = menuLocation.pixel[1] - menuHeight + 40
+    } else if (spaceBelow < menuHeight) {
+      // Not enough space above or below, position at top of screen
+      top = Math.max(10, window.innerHeight - menuHeight - 10)
+    }
+
+    return { left, top }
+  }
+
   return (
     <AnimatePresence>
       {visible && menuLocation && (
@@ -306,17 +336,14 @@ export function LongPressMenu() {
 
           {/* Context Menu */}
           <motion.div
-            className="fixed z-[1601] bg-white rounded-xl shadow-md overflow-hidden min-w-[200px] border-0 outline-none"
-            style={{
-              left: Math.min(menuLocation.pixel[0], window.innerWidth - 220),
-              top: Math.min(menuLocation.pixel[1], window.innerHeight - 240)
-            }}
+            className="fixed z-[1601] bg-white rounded-xl shadow-md overflow-hidden min-w-[200px] border-0 outline-none max-h-[90vh] overflow-y-auto"
+            style={getMenuStyle()}
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
             transition={{ duration: 0.15 }}
           >
-            {/* Header with coordinates - white bg, blue text */}
+            {/* Header with coordinates */}
             <div className="px-4 py-3 bg-white border-b border-gray-100">
               <div className="flex items-center gap-2 text-blue-600">
                 <MapPin size={16} />
@@ -328,7 +355,7 @@ export function LongPressMenu() {
 
             {/* Menu items */}
             <div className="bg-white">
-              {/* Take photo and add catch */}
+              {/* Take photo */}
               <button
                 onClick={handleTakePhoto}
                 className="w-full px-4 py-3 flex items-center gap-3 transition-colors hover:bg-green-50 text-gray-700 bg-white border-0 outline-none"
@@ -346,7 +373,7 @@ export function LongPressMenu() {
                 <span className="font-medium">Vangst toevoegen</span>
               </button>
 
-              {/* Open Street View */}
+              {/* Street View */}
               <button
                 onClick={handleOpenStreetView}
                 className="w-full px-4 py-3 flex items-center gap-3 transition-colors hover:bg-yellow-50 text-gray-700 bg-white border-0 outline-none"
@@ -355,7 +382,7 @@ export function LongPressMenu() {
                 <span className="font-medium">Street View</span>
               </button>
 
-              {/* Open in Google Maps */}
+              {/* Google Maps */}
               <button
                 onClick={handleOpenGoogleMaps}
                 className="w-full px-4 py-3 flex items-center gap-3 transition-colors hover:bg-blue-50 text-gray-700 bg-white border-0 outline-none"
@@ -381,12 +408,15 @@ export function LongPressMenu() {
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: 'auto', opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
-                    className="overflow-hidden bg-gray-50"
+                    className="overflow-hidden bg-gray-50 border-t border-gray-100"
                   >
-                    <div className="py-1">
+                    <div className="py-1 px-2">
+                      <div className="px-2 py-1.5 text-xs text-gray-400 font-medium">
+                        Toon/verberg widgets
+                      </div>
                       <WidgetToggle
-                        icon={<Cloud size={16} className="text-blue-500" />}
-                        label="Weer widget"
+                        icon={<Thermometer size={16} className="text-orange-500" />}
+                        label="Weer & visvriendelijkheid"
                         checked={showWeatherWidget}
                         onChange={setShowWeatherWidget}
                       />
@@ -397,13 +427,25 @@ export function LongPressMenu() {
                         onChange={setShowWindIndicator}
                       />
                       <WidgetToggle
-                        icon={<Waves size={16} className="text-blue-400" />}
-                        label="Getijden widget"
+                        icon={<Waves size={16} className="text-blue-500" />}
+                        label="Getijden"
                         checked={showTideWidget}
                         onChange={setShowTideWidget}
                       />
                       <WidgetToggle
-                        icon={<BarChart3 size={16} className="text-orange-500" />}
+                        icon={<CloudRain size={16} className="text-indigo-500" />}
+                        label="Buienradar"
+                        checked={showBuienradarWidget}
+                        onChange={setShowBuienradarWidget}
+                      />
+                      <WidgetToggle
+                        icon={<Droplets size={16} className="text-cyan-600" />}
+                        label="Waterafvoer rivieren"
+                        checked={showWaterflowWidget}
+                        onChange={setShowWaterflowWidget}
+                      />
+                      <WidgetToggle
+                        icon={<BarChart3 size={16} className="text-green-500" />}
                         label="Voorspelling schuif"
                         checked={showForecastSlider}
                         onChange={setShowForecastSlider}
@@ -425,7 +467,7 @@ export function LongPressMenu() {
             />
 
             {/* Cancel button */}
-            <div className="bg-white">
+            <div className="bg-white border-t border-gray-100">
               <button
                 onClick={forceClose}
                 className="w-full px-4 py-3 flex items-center justify-center gap-2 text-gray-500 hover:bg-blue-50 transition-colors bg-white border-0 outline-none"
@@ -451,13 +493,15 @@ function WidgetToggle({ icon, label, checked, onChange }: {
   return (
     <button
       onClick={() => onChange(!checked)}
-      className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-gray-100 transition-colors border-0 outline-none bg-transparent"
+      className="w-full px-2 py-2 flex items-center gap-2 hover:bg-gray-100 rounded-lg transition-colors border-0 outline-none bg-transparent"
     >
       {icon}
       <span className="text-sm text-gray-700 flex-1 text-left">{label}</span>
-      <div className={`w-9 h-5 rounded-full transition-colors ${checked ? 'bg-blue-500' : 'bg-gray-300'}`}>
-        <div className={`w-4 h-4 mt-0.5 rounded-full bg-white shadow transition-transform ${checked ? 'ml-4.5 translate-x-0' : 'ml-0.5'}`}
-             style={{ marginLeft: checked ? '18px' : '2px' }} />
+      <div className={`w-9 h-5 rounded-full transition-colors flex-shrink-0 ${checked ? 'bg-orange-500' : 'bg-gray-300'}`}>
+        <div
+          className={`w-4 h-4 mt-0.5 rounded-full bg-white shadow transition-transform`}
+          style={{ marginLeft: checked ? '18px' : '2px' }}
+        />
       </div>
     </button>
   )

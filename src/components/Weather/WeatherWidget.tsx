@@ -81,10 +81,10 @@ function FishScale({ value, maxFish = 3, color }: { value: number; maxFish?: num
   )
 }
 
-// Realistic moon phase component with 3D shading
+// Realistic moon phase component with subtle 3D shading
 function MoonPhase({ phase, size = 20 }: { phase: number; size?: number }) {
   // phase: 0 = new moon, 0.5 = full moon, 1 = new moon again
-  // Create realistic moon with shadow
+  // Create realistic moon with subtle shadow
 
   // Calculate shadow position based on phase
   // 0 = new moon (fully dark), 0.25 = first quarter, 0.5 = full moon, 0.75 = last quarter
@@ -114,33 +114,41 @@ function MoonPhase({ phase, size = 20 }: { phase: number; size?: number }) {
         }}
       />
 
-      {/* Shadow overlay for phase */}
+      {/* Shadow overlay for phase - subtle gradient, not pitch black */}
       <div
         className="absolute inset-0 rounded-full"
         style={{
           background: isWaxing
-            ? `linear-gradient(to left, transparent ${(1 - shadowOffset) * 100}%, rgba(20,20,30,0.95) ${(1 - shadowOffset) * 100 + 15}%)`
-            : `linear-gradient(to right, transparent ${(1 - shadowOffset) * 100}%, rgba(20,20,30,0.95) ${(1 - shadowOffset) * 100 + 15}%)`,
+            ? `linear-gradient(to left,
+                transparent ${(1 - shadowOffset) * 100}%,
+                rgba(60,60,80,0.3) ${(1 - shadowOffset) * 100 + 8}%,
+                rgba(50,50,70,0.6) ${(1 - shadowOffset) * 100 + 15}%,
+                rgba(40,40,60,0.75) 100%)`
+            : `linear-gradient(to right,
+                transparent ${(1 - shadowOffset) * 100}%,
+                rgba(60,60,80,0.3) ${(1 - shadowOffset) * 100 + 8}%,
+                rgba(50,50,70,0.6) ${(1 - shadowOffset) * 100 + 15}%,
+                rgba(40,40,60,0.75) 100%)`,
         }}
       />
 
       {/* Terminator line (day/night boundary) - subtle glow */}
       {phase > 0.02 && phase < 0.98 && (
         <div
-          className="absolute top-0 bottom-0 w-[2px] opacity-20"
+          className="absolute top-0 bottom-0 w-[2px] opacity-30"
           style={{
             left: isWaxing ? `${(1 - shadowOffset) * 100}%` : `${shadowOffset * 100}%`,
-            background: 'linear-gradient(to bottom, transparent, rgba(255,255,200,0.5), transparent)'
+            background: 'linear-gradient(to bottom, transparent, rgba(255,255,230,0.6), transparent)'
           }}
         />
       )}
 
-      {/* Earthshine effect for new moon */}
+      {/* Earthshine effect for new moon - brighter */}
       {(phase < 0.08 || phase > 0.92) && (
         <div
           className="absolute inset-0 rounded-full"
           style={{
-            background: 'radial-gradient(circle at 50% 50%, rgba(100,120,150,0.15) 0%, transparent 70%)'
+            background: 'radial-gradient(circle at 50% 50%, rgba(140,160,190,0.25) 0%, transparent 70%)'
           }}
         />
       )}

@@ -40,7 +40,7 @@ export const useLayerStore = create<LayerState>()(
     opacity: {
       'Dieptekaart': 0.7,
       'Viswater': 0.5,
-      'PDOK Water NL': 0.6
+      'PDOK Water NL': 1.0
     },
 
     loadingState: {},
