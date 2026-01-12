@@ -71,7 +71,7 @@ export function PresetButtons() {
         title="Presets"
       >
         {isOpen ? (
-          <ChevronUp size={20} className="text-blue-600" />
+          <ChevronUp size={20} className="text-orange-600" />
         ) : (
           <Layers size={20} className="text-gray-600" />
         )}
@@ -99,7 +99,7 @@ export function PresetButtons() {
               transition={{ duration: 0.15 }}
             >
               {/* Header */}
-              <div className="px-3 py-2 bg-gradient-to-r from-blue-500 to-blue-600">
+              <div className="px-3 py-2 bg-gradient-to-r from-orange-500 to-orange-600">
                 <span className="font-medium text-white text-sm">Presets</span>
               </div>
 
@@ -151,12 +151,12 @@ export function PresetButtons() {
                       }}
                       placeholder="Naam..."
                       autoFocus
-                      className="flex-1 px-2 py-1 text-sm rounded bg-gray-50 border-0 outline-none focus:ring-1 focus:ring-blue-400"
+                      className="flex-1 px-2 py-1 text-sm rounded bg-gray-50 border-0 outline-none focus:ring-1 focus:ring-orange-400"
                     />
                     <button
                       onClick={handleAddPreset}
                       disabled={!newPresetName.trim()}
-                      className="px-2 py-1 bg-blue-500 text-white rounded text-xs disabled:opacity-50 border-0 outline-none"
+                      className="px-2 py-1 bg-orange-500 text-white rounded text-xs disabled:opacity-50 border-0 outline-none"
                     >
                       OK
                     </button>
@@ -164,7 +164,7 @@ export function PresetButtons() {
                 ) : (
                   <button
                     onClick={() => setShowAddPreset(true)}
-                    className="w-full flex items-center justify-center gap-1 px-2 py-1.5 text-sm text-blue-600 hover:bg-blue-50 rounded transition-colors border-0 outline-none"
+                    className="w-full flex items-center justify-center gap-1 px-2 py-1.5 text-sm text-orange-600 hover:bg-orange-50 rounded transition-colors border-0 outline-none"
                   >
                     <Plus size={14} />
                     <span>Nieuwe preset</span>

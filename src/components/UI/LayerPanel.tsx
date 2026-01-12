@@ -80,14 +80,14 @@ export function LayerPanel() {
               transition={{ duration: 0.15 }}
             >
               {/* Header */}
-              <div className="flex items-center justify-between px-3 py-2 bg-blue-500">
+              <div className="flex items-center justify-between px-3 py-2 bg-orange-500">
                 <div className="flex items-center gap-2">
                   <Layers size={14} className="text-white" />
                   <span className="font-medium text-white text-sm">Kaartlagen</span>
                 </div>
                 <button
                   onClick={toggleLayerPanel}
-                  className="p-0.5 rounded border-0 outline-none bg-blue-400/50 hover:bg-blue-400 transition-colors"
+                  className="p-0.5 rounded border-0 outline-none bg-orange-400/50 hover:bg-orange-400 transition-colors"
                 >
                   <X size={16} className="text-white" strokeWidth={2.5} />
                 </button>
@@ -103,8 +103,8 @@ export function LayerPanel() {
                         key={layer.name}
                         className={`flex-1 px-2 py-1.5 text-xs rounded-lg transition-colors border-0 outline-none ${
                           visible[layer.name]
-                            ? 'bg-blue-500 text-white'
-                            : 'bg-gray-100 text-gray-600 hover:bg-blue-50'
+                            ? 'bg-orange-500 text-white'
+                            : 'bg-gray-100 text-gray-600 hover:bg-orange-50'
                         }`}
                         onClick={() => handleBaseLayerChange(layer.name)}
                       >
@@ -117,8 +117,8 @@ export function LayerPanel() {
                       onClick={handleLabelsToggle}
                       className={`mt-1.5 w-full flex items-center justify-between px-2 py-1.5 text-xs rounded-lg transition-colors border-0 outline-none ${
                         visible['Labels Overlay']
-                          ? 'bg-blue-50 text-blue-600'
-                          : 'bg-transparent text-gray-500 hover:bg-blue-50'
+                          ? 'bg-orange-50 text-orange-600'
+                          : 'bg-transparent text-gray-500 hover:bg-orange-50'
                       }`}
                     >
                       <span className="flex items-center gap-1.5">
@@ -161,7 +161,7 @@ export function LayerPanel() {
 
                 {/* Fishing layers */}
                 <div>
-                  <div className="text-xs font-medium text-blue-600 mb-1.5 px-1 uppercase tracking-wide">Vislagen</div>
+                  <div className="text-xs font-medium text-orange-600 mb-1.5 px-1 uppercase tracking-wide">Vislagen</div>
                   <div className="space-y-0.5">
                     {VIS_LAYERS.map((layer) => {
                       const Icon = layer.icon
@@ -172,8 +172,8 @@ export function LayerPanel() {
                           key={layer.name}
                           className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors border-0 outline-none ${
                             isVisible
-                              ? 'bg-blue-50'
-                              : 'bg-transparent hover:bg-blue-50'
+                              ? 'bg-orange-50'
+                              : 'bg-transparent hover:bg-orange-50'
                           }`}
                           onClick={() => toggleLayer(layer.name)}
                         >
@@ -183,7 +183,7 @@ export function LayerPanel() {
                           >
                             <Icon size={12} className="text-white" />
                           </div>
-                          <span className={`text-sm ${isVisible ? 'text-blue-700' : 'text-gray-600'}`}>
+                          <span className={`text-sm ${isVisible ? 'text-orange-700' : 'text-gray-600'}`}>
                             {layer.name}
                           </span>
                           <div className="ml-auto">

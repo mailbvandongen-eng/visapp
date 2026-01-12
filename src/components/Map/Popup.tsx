@@ -185,7 +185,7 @@ export function Popup() {
           className="fixed bottom-0 left-0 right-0 z-[1200] bg-white rounded-t-2xl shadow-lg max-h-[50vh] overflow-hidden"
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gradient-to-r from-blue-500 to-blue-600">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gradient-to-r from-orange-500 to-orange-600">
             <div className="flex items-center gap-2">
               {/* Navigation arrows */}
               {totalItems > 1 && (
@@ -193,7 +193,7 @@ export function Popup() {
                   <button
                     onClick={goPrev}
                     disabled={currentIndex === 0}
-                    className="p-1 rounded bg-blue-600 hover:bg-blue-700 disabled:opacity-50 border-0 outline-none"
+                    className="p-1 rounded bg-orange-600 hover:bg-orange-700 disabled:opacity-50 border-0 outline-none"
                   >
                     <ChevronLeft size={16} className="text-white" />
                   </button>
@@ -203,7 +203,7 @@ export function Popup() {
                   <button
                     onClick={goNext}
                     disabled={currentIndex === totalItems - 1}
-                    className="p-1 rounded bg-blue-600 hover:bg-blue-700 disabled:opacity-50 border-0 outline-none"
+                    className="p-1 rounded bg-orange-600 hover:bg-orange-700 disabled:opacity-50 border-0 outline-none"
                   >
                     <ChevronRight size={16} className="text-white" />
                   </button>
@@ -218,7 +218,7 @@ export function Popup() {
                   href={mapsUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="p-1.5 rounded bg-blue-600 hover:bg-blue-700 border-0 outline-none"
+                  className="p-1.5 rounded bg-orange-600 hover:bg-orange-700 border-0 outline-none"
                   title="Navigeer met Google Maps"
                   onClick={(e) => e.stopPropagation()}
                 >

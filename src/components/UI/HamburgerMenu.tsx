@@ -66,7 +66,7 @@ export function HamburgerMenu() {
       <motion.button
         className={`fixed right-2 z-[800] w-11 h-11 flex items-center justify-center rounded-xl shadow-sm border-0 outline-none transition-colors backdrop-blur-sm ${
           isOpen
-            ? 'bg-blue-500 hover:bg-blue-600'
+            ? 'bg-orange-500 hover:bg-orange-600'
             : 'bg-white/90 hover:bg-white'
         }`}
         style={safeTopStyle}
@@ -105,15 +105,15 @@ export function HamburgerMenu() {
                 top: 'calc(max(0.5rem, env(safe-area-inset-top, 0.5rem)) + 52px)'
               }}
             >
-              {/* Header - blue bg, white text */}
-              <div className="flex items-center justify-between gap-2 px-3 py-2 bg-blue-500">
+              {/* Header - orange bg, white text */}
+              <div className="flex items-center justify-between gap-2 px-3 py-2 bg-orange-500">
                 <span className="font-medium text-white text-sm">Menu</span>
               </div>
 
               {/* Google Login / Profile Section */}
               {loading ? (
                 <div className="px-3 py-4 flex items-center justify-center">
-                  <div className="w-5 h-5 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin" />
+                  <div className="w-5 h-5 border-2 border-gray-300 border-t-orange-500 rounded-full animate-spin" />
                 </div>
               ) : user ? (
                 <div className="px-3 py-3 border-b border-gray-100">

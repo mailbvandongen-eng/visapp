@@ -35,12 +35,12 @@ export function InfoButton() {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
           >
-            {/* Header - blue bg, white text */}
-            <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-blue-500 to-blue-600">
+            {/* Header - orange bg, white text */}
+            <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-orange-500 to-orange-600">
               <span className="font-medium text-white">VisApp NL v1.2.5</span>
               <button
                 onClick={toggleInfoPanel}
-                className="p-1 rounded bg-blue-400/50 hover:bg-blue-400 transition-colors border-0 outline-none"
+                className="p-1 rounded bg-orange-400/50 hover:bg-orange-400 transition-colors border-0 outline-none"
               >
                 <X size={18} className="text-white" strokeWidth={2.5} />
               </button>
@@ -54,7 +54,7 @@ export function InfoButton() {
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 text-sm font-medium transition-colors border-0 outline-none ${
                     activeTab === tab.id
-                      ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/50'
+                      ? 'text-orange-600 border-b-2 border-orange-600 bg-orange-50/50'
                       : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
                   }`}
                 >

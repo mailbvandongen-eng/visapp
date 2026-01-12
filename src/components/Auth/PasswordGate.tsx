@@ -20,7 +20,7 @@ export function PasswordGate({ children }: PasswordGateProps) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-500 via-blue-600 to-blue-800 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-orange-500 via-orange-600 to-orange-800 flex items-center justify-center">
         <div className="w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin" />
       </div>
     )
@@ -50,7 +50,7 @@ export function PasswordGate({ children }: PasswordGateProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-500 via-blue-600 to-blue-800 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-orange-500 via-orange-600 to-orange-800 flex items-center justify-center p-4">
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -58,7 +58,7 @@ export function PasswordGate({ children }: PasswordGateProps) {
       >
         {/* Logo */}
         <div className="flex flex-col items-center mb-6">
-          <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center mb-4 shadow-lg">
+          <div className="w-20 h-20 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center mb-4 shadow-lg">
             <Fish size={40} className="text-white" />
           </div>
           <h1 className="text-2xl font-bold text-gray-800">VisApp</h1>
@@ -112,7 +112,7 @@ export function PasswordGate({ children }: PasswordGateProps) {
               className={`w-full pl-10 pr-12 py-3 rounded-lg border-2 transition-colors outline-none ${
                 error
                   ? 'border-red-400 bg-red-50'
-                  : 'border-gray-200 focus:border-blue-400'
+                  : 'border-gray-200 focus:border-orange-400'
               }`}
             />
             <button
@@ -136,7 +136,7 @@ export function PasswordGate({ children }: PasswordGateProps) {
 
           <motion.button
             type="submit"
-            className="w-full py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg font-medium shadow-md hover:shadow-lg transition-shadow"
+            className="w-full py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg font-medium shadow-md hover:shadow-lg transition-shadow"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >

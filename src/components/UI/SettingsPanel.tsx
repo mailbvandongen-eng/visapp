@@ -50,11 +50,11 @@ export function SettingsPanel() {
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-blue-500 to-blue-600">
+        <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-orange-500 to-orange-600">
           <h2 className="text-lg font-semibold text-white">Instellingen</h2>
           <button
             onClick={toggleSettingsPanel}
-            className="p-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 transition-colors border-0 outline-none"
+            className="p-1.5 rounded-lg bg-orange-600 hover:bg-orange-700 transition-colors border-0 outline-none"
           >
             <X size={18} className="text-white" />
           </button>
@@ -109,7 +109,7 @@ export function SettingsPanel() {
                 <select
                   value={defaultBackground}
                   onChange={(e) => handleBackgroundChange(e.target.value as 'OpenStreetMap' | 'Luchtfoto' | 'Terrein')}
-                  className="mt-1 w-full px-2 py-1 text-sm border border-gray-200 rounded-lg bg-white outline-none focus:ring-2 focus:ring-blue-400"
+                  className="mt-1 w-full px-2 py-1 text-sm border border-gray-200 rounded-lg bg-white outline-none focus:ring-2 focus:ring-orange-400"
                 >
                   <option value="Terrein">Terrein (reliëf)</option>
                   <option value="OpenStreetMap">OpenStreetMap</option>
@@ -184,7 +184,7 @@ function ToggleItem({ icon, label, description, checked, onChange }: ToggleItemP
       <button
         onClick={() => onChange(!checked)}
         className={`relative w-11 h-6 rounded-full transition-colors border-0 outline-none ${
-          checked ? 'bg-blue-500' : 'bg-gray-300'
+          checked ? 'bg-orange-500' : 'bg-gray-300'
         }`}
       >
         <span
