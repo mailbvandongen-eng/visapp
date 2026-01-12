@@ -78,7 +78,19 @@ export const useSettingsStore = create<SettingsState>()(
       setShowFontSliders: (showFontSliders) => set({ showFontSliders })
     }),
     {
-      name: 'visapp-settings'
+      name: 'visapp-settings',
+      version: 2,
+      migrate: (persistedState: unknown, version: number) => {
+        const state = persistedState as Partial<SettingsState>
+        // Migrate from version 1 (or no version) to version 2: change default to Terrein
+        if (version < 2) {
+          return {
+            ...state,
+            defaultBackground: 'Terrein'
+          }
+        }
+        return state
+      }
     }
   )
 )

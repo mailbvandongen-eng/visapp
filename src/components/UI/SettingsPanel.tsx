@@ -27,7 +27,6 @@ export function SettingsPanel() {
   const handleBackgroundChange = (value: 'OpenStreetMap' | 'Luchtfoto' | 'Terrein') => {
     setDefaultBackground(value)
     setLayerVisibility('Terrein', value === 'Terrein')
-    setLayerVisibility('Hillshade', value === 'Terrein')
     setLayerVisibility('OpenStreetMap', value === 'OpenStreetMap')
     setLayerVisibility('Luchtfoto', value === 'Luchtfoto')
     setLayerVisibility('Labels Overlay', value === 'Luchtfoto')

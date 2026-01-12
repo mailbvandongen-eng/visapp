@@ -33,25 +33,14 @@ export function MapContainer() {
 
     console.log('Background setting:', bgSetting)
 
-    // Hillshade layer (bottom, subtle terrain relief)
-    const hillshadeLayer = new TileLayer({
-      properties: { title: 'Hillshade', type: 'base' },
-      visible: showTerrein,
-      opacity: 0.15,
-      source: new XYZ({
-        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}',
-        attributions: '© Esri',
-        maxZoom: 18
-      })
-    })
-
-    // OSM Light (CartoDB Positron) - clean with visible water
-    const osmLightLayer = new TileLayer({
+    // OpenTopoMap - terrain with hillshade and blue water
+    const terreinLayer = new TileLayer({
       properties: { title: 'Terrein', type: 'base' },
       visible: showTerrein,
       source: new XYZ({
-        url: 'https://{a-d}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
-        attributions: '© OpenStreetMap contributors © CARTO'
+        url: 'https://{a-c}.tile.opentopomap.org/{z}/{x}/{y}.png',
+        attributions: '© OpenStreetMap contributors, SRTM | Map style: © OpenTopoMap (CC-BY-SA)',
+        maxZoom: 17
       })
     })
 
@@ -83,21 +72,18 @@ export function MapContainer() {
       })
     })
 
-    // Add layers in correct order (hillshade first, then the rest)
-    map.addLayer(hillshadeLayer)
-    map.addLayer(osmLightLayer)
+    // Add layers in correct order
+    map.addLayer(terreinLayer)
     map.addLayer(osmLayer)
     map.addLayer(satelliteLayer)
     map.addLayer(labelsOverlay)
 
-    registerLayer('Hillshade', hillshadeLayer)
-    registerLayer('Terrein', osmLightLayer)
+    registerLayer('Terrein', terreinLayer)
     registerLayer('OpenStreetMap', osmLayer)
     registerLayer('Luchtfoto', satelliteLayer)
     registerLayer('Labels Overlay', labelsOverlay)
 
     // Also update the layer store visibility to match
-    setLayerVisibility('Hillshade', showTerrein)
     setLayerVisibility('Terrein', showTerrein)
     setLayerVisibility('OpenStreetMap', showOSM)
     setLayerVisibility('Luchtfoto', showSatellite)
