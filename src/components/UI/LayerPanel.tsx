@@ -66,14 +66,14 @@ export function LayerPanel() {
           <>
             {/* Backdrop */}
             <motion.div
-              className="fixed inset-0 z-[1000]"
+              className="fixed inset-0 z-[1600]"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={toggleLayerPanel}
             />
             <motion.div
-              className="fixed top-2 right-2 z-[1001] bg-white rounded-lg shadow-lg overflow-hidden w-[280px] max-h-[calc(100vh-100px)] flex flex-col"
+              className="fixed top-2 right-2 z-[1601] bg-white rounded-lg shadow-lg overflow-hidden w-[280px] max-h-[calc(100vh-100px)] flex flex-col"
               initial={{ opacity: 0, x: 10 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 10 }}

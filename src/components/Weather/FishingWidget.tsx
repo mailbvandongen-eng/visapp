@@ -823,22 +823,35 @@ function MoonModal({ onClose }: { onClose: () => void }) {
   )
 }
 
-// Tide Modal with nice graph
+// Sunrise/sunset calculation for a given date and location
+function getSunTimes(date: Date, lat: number = 52.1): { sunrise: number; sunset: number } {
+  const dayOfYear = Math.floor((date.getTime() - new Date(date.getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24))
+  // Simplified calculation for Netherlands latitude
+  const declination = -23.45 * Math.cos((360 / 365) * (dayOfYear + 10) * Math.PI / 180)
+  const hourAngle = Math.acos(-Math.tan(lat * Math.PI / 180) * Math.tan(declination * Math.PI / 180)) * 180 / Math.PI
+  const solarNoon = 12 - 0.1 // Adjust for timezone
+  const sunrise = solarNoon - hourAngle / 15
+  const sunset = solarNoon + hourAngle / 15
+  return { sunrise: Math.max(0, sunrise), sunset: Math.min(24, sunset) }
+}
+
+// Tide Modal matching the screenshot design
 function TideModal({ onClose }: { onClose: () => void }) {
-  const [selectedTime, setSelectedTime] = useState(new Date())
+  const [selectedDate, setSelectedDate] = useState(new Date())
   const position = useGPSStore(state => state.position)
+  const { current } = useWeatherStore()
 
   const TIDE_STATIONS = [
+    { id: 'SCHEVNGN', name: 'Scheveningen', lat: 52.1033, lng: 4.2664 },
     { id: 'HOEKVHLD', name: 'Hoek van Holland', lat: 51.9775, lng: 4.1200 },
     { id: 'IJMDMNTHVN', name: 'IJmuiden', lat: 52.4639, lng: 4.5556 },
     { id: 'DENHDR', name: 'Den Helder', lat: 52.9647, lng: 4.7456 },
     { id: 'HARVLGTHVN', name: 'Harlingen', lat: 53.1747, lng: 5.4083 },
     { id: 'VLISSGN', name: 'Vlissingen', lat: 51.4428, lng: 3.5961 },
-    { id: 'SCHEVNGN', name: 'Scheveningen', lat: 52.1033, lng: 4.2664 },
   ]
 
   const findNearestStation = (lat: number, lng: number) => {
-    let nearest = TIDE_STATIONS[5]
+    let nearest = TIDE_STATIONS[0]
     let minDist = Infinity
     for (const station of TIDE_STATIONS) {
       const dist = Math.sqrt(Math.pow(station.lat - lat, 2) + Math.pow(station.lng - lng, 2))
@@ -848,31 +861,33 @@ function TideModal({ onClose }: { onClose: () => void }) {
   }
 
   const [selectedStation, setSelectedStation] = useState(() =>
-    position ? findNearestStation(position.lat, position.lng) : TIDE_STATIONS[5]
+    position ? findNearestStation(position.lat, position.lng) : TIDE_STATIONS[0]
   )
 
-  const now = new Date()
-  const minTime = useMemo(() => {
-    const t = new Date(); t.setDate(t.getDate() - 1); t.setHours(0, 0, 0, 0); return t
-  }, [])
-  const maxTime = useMemo(() => {
-    const t = new Date(); t.setDate(t.getDate() + 2); t.setHours(23, 59, 59, 999); return t
-  }, [])
-
+  // Get tide data for the selected date (24h view)
   const tideData = useMemo(() => {
-    const startDate = new Date(minTime)
-    return calculateTides(startDate, 4)
-  }, [minTime])
+    const startDate = new Date(selectedDate)
+    startDate.setHours(0, 0, 0, 0)
+    return calculateTides(startDate, 2).filter(t => {
+      const tideDay = new Date(t.time)
+      tideDay.setHours(0, 0, 0, 0)
+      const selDay = new Date(selectedDate)
+      selDay.setHours(0, 0, 0, 0)
+      return tideDay.getTime() === selDay.getTime()
+    })
+  }, [selectedDate])
 
-  const timeRange = maxTime.getTime() - minTime.getTime()
-  const sliderValue = ((selectedTime.getTime() - minTime.getTime()) / timeRange) * 100
+  const lowTides = tideData.filter(t => t.type === 'low')
+  const highTides = tideData.filter(t => t.type === 'high')
 
+  // Get water level at any time using cosine interpolation
   const getWaterLevelAtTime = (time: Date): number => {
-    if (tideData.length < 2) return 1.0
-    let prevTide = tideData[0], nextTide = tideData[1]
-    for (let i = 0; i < tideData.length - 1; i++) {
-      if (tideData[i].time <= time && tideData[i + 1].time > time) {
-        prevTide = tideData[i]; nextTide = tideData[i + 1]; break
+    const allTides = calculateTides(new Date(selectedDate.getTime() - 24 * 60 * 60 * 1000), 3)
+    if (allTides.length < 2) return 1.0
+    let prevTide = allTides[0], nextTide = allTides[1]
+    for (let i = 0; i < allTides.length - 1; i++) {
+      if (allTides[i].time <= time && allTides[i + 1].time > time) {
+        prevTide = allTides[i]; nextTide = allTides[i + 1]; break
       }
     }
     const totalDuration = nextTide.time.getTime() - prevTide.time.getTime()
@@ -882,160 +897,255 @@ function TideModal({ onClose }: { onClose: () => void }) {
     return prevTide.height + (nextTide.height - prevTide.height) * cosineProgress
   }
 
-  // Generate curve data points
+  // Generate curve points for 24h (00:00 to 24:00)
   const curvePoints = useMemo(() => {
-    const points: { x: number; y: number; time: Date }[] = []
-    const steps = 200
-    for (let i = 0; i <= steps; i++) {
-      const time = new Date(minTime.getTime() + (i / steps) * timeRange)
-      const level = getWaterLevelAtTime(time)
-      points.push({ x: (i / steps) * 100, y: level, time })
+    const points: { hour: number; height: number }[] = []
+    const dayStart = new Date(selectedDate)
+    dayStart.setHours(0, 0, 0, 0)
+    for (let h = 0; h <= 24; h += 0.25) {
+      const time = new Date(dayStart.getTime() + h * 60 * 60 * 1000)
+      points.push({ hour: h, height: getWaterLevelAtTime(time) })
     }
     return points
-  }, [minTime, timeRange, tideData])
+  }, [selectedDate])
 
-  const minLevel = Math.min(...curvePoints.map(p => p.y))
-  const maxLevel = Math.max(...curvePoints.map(p => p.y))
-  const levelRange = maxLevel - minLevel || 1
+  const now = new Date()
+  const isToday = selectedDate.toDateString() === now.toDateString()
+  const currentHour = now.getHours() + now.getMinutes() / 60
+  const currentLevel = isToday ? getWaterLevelAtTime(now) : null
 
-  const formatDate = (date: Date) => {
-    const today = new Date(); today.setHours(0,0,0,0)
-    const dateDay = new Date(date); dateDay.setHours(0,0,0,0)
-    const diff = Math.floor((dateDay.getTime() - today.getTime()) / (24*60*60*1000))
-    if (diff === 0) return 'Vandaag'
-    if (diff === 1) return 'Morgen'
-    if (diff === -1) return 'Gisteren'
-    return date.toLocaleDateString('nl-NL', { weekday: 'short', day: 'numeric' })
+  // Find next tide from current time
+  const nextTide = tideData.find(t => t.time > now)
+
+  // Determine if tide is rising or falling
+  const getTrend = (): 'rising' | 'falling' => {
+    if (!isToday) return 'stable' as any
+    const levelNow = getWaterLevelAtTime(now)
+    const level10MinAgo = getWaterLevelAtTime(new Date(now.getTime() - 10 * 60 * 1000))
+    return levelNow > level10MinAgo ? 'rising' : 'falling'
   }
 
-  const formatTime = (date: Date) => date.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })
+  // Moon phase for the selected date
+  const moonPhase = getMoonPhase(selectedDate)
+  const moonPhaseName = getMoonPhaseName(moonPhase)
+  const illumination = Math.round((moonPhase <= 0.5 ? moonPhase * 2 : (1 - moonPhase) * 2) * 100)
+  const isWaning = moonPhase > 0.5
 
-  const currentLevel = getWaterLevelAtTime(selectedTime)
-  const nowPosition = ((now.getTime() - minTime.getTime()) / timeRange) * 100
-  const selectedPosition = ((selectedTime.getTime() - minTime.getTime()) / timeRange) * 100
+  // Sunrise/sunset for daytime band
+  const sunTimes = getSunTimes(selectedDate, selectedStation.lat)
+
+  // Height scale (0 to 2.4m like screenshot)
+  const heightLabels = [2.4, 2, 1.6, 1.2, 0.8, 0.4, 0]
+  const maxHeight = 2.4
+
+  const formatTime = (date: Date) => date.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })
+  const formatDateLabel = () => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const sel = new Date(selectedDate)
+    sel.setHours(0, 0, 0, 0)
+    const diff = Math.floor((sel.getTime() - today.getTime()) / (24 * 60 * 60 * 1000))
+    if (diff === 0) return '(Today)'
+    if (diff === 1) return '(Morgen)'
+    if (diff === -1) return '(Gisteren)'
+    return ''
+  }
+
+  // Cloud percentage from weather
+  const cloudPercent = current?.weatherCode ? (current.weatherCode >= 3 ? 75 : current.weatherCode >= 2 ? 50 : current.weatherCode >= 1 ? 25 : 0) : 0
 
   return (
     <motion.div
-      className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/50 p-4"
+      className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/50"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       onClick={onClose}
     >
       <motion.div
-        className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl w-full max-w-md overflow-hidden select-none"
+        className="bg-white w-full max-w-md mx-4 rounded-2xl overflow-hidden shadow-2xl select-none"
         initial={{ scale: 0.9, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.9, opacity: 0, y: 20 }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="p-4 space-y-3">
-          {/* Header */}
+        {/* Blue header with location */}
+        <div className="bg-[#3b82f6] px-4 py-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Waves size={20} className="text-blue-500" />
-              <span className="font-semibold text-gray-800">Getijden</span>
-            </div>
-            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors border-0 outline-none bg-transparent">
-              <X size={16} className="text-gray-500" />
+            <select
+              value={selectedStation.id}
+              onChange={(e) => {
+                const station = TIDE_STATIONS.find(s => s.id === e.target.value)
+                if (station) setSelectedStation(station)
+              }}
+              className="bg-transparent text-white font-semibold text-lg border-0 outline-none cursor-pointer appearance-none"
+              style={{ backgroundImage: 'none' }}
+            >
+              {TIDE_STATIONS.map(station => (
+                <option key={station.id} value={station.id} className="text-gray-800">{station.name}</option>
+              ))}
+            </select>
+            <button onClick={onClose} className="p-1 hover:bg-white/20 rounded-full transition-colors border-0 outline-none bg-transparent">
+              <X size={20} className="text-white" />
             </button>
           </div>
+        </div>
 
-          {/* Station selector */}
-          <select
-            value={selectedStation.id}
-            onChange={(e) => {
-              const station = TIDE_STATIONS.find(s => s.id === e.target.value)
-              if (station) setSelectedStation(station)
-            }}
-            className="w-full p-2.5 border border-gray-200 rounded-xl text-sm bg-white/80 outline-none focus:ring-2 focus:ring-blue-400"
-          >
-            {TIDE_STATIONS.map(station => (
-              <option key={station.id} value={station.id}>{station.name}</option>
-            ))}
-          </select>
-
-          {/* Tide Graph */}
-          <div className="relative bg-gradient-to-b from-blue-50 to-blue-100 rounded-xl p-3 h-32">
-            {/* SVG Curve */}
-            <svg className="absolute inset-3 w-[calc(100%-24px)] h-[calc(100%-24px)]" viewBox="0 0 100 100" preserveAspectRatio="none">
-              {/* Water fill */}
-              <path
-                d={`M 0 100 ${curvePoints.map(p => `L ${p.x} ${100 - ((p.y - minLevel) / levelRange) * 80}`).join(' ')} L 100 100 Z`}
-                fill="url(#waterGradient)"
-                opacity="0.6"
-              />
-              {/* Curve line */}
-              <path
-                d={`M ${curvePoints.map(p => `${p.x} ${100 - ((p.y - minLevel) / levelRange) * 80}`).join(' L ')}`}
-                fill="none"
-                stroke="#3b82f6"
-                strokeWidth="1.5"
-              />
-              {/* Now marker */}
-              {nowPosition >= 0 && nowPosition <= 100 && (
-                <line x1={nowPosition} y1="0" x2={nowPosition} y2="100" stroke="#f59e0b" strokeWidth="1" strokeDasharray="3,3" />
-              )}
-              {/* Selected marker */}
-              <line x1={selectedPosition} y1="0" x2={selectedPosition} y2="100" stroke="#ef4444" strokeWidth="1.5" />
-              <circle cx={selectedPosition} cy={100 - ((currentLevel - minLevel) / levelRange) * 80} r="3" fill="#ef4444" />
-              <defs>
-                <linearGradient id="waterGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" stopColor="#3b82f6" />
-                  <stop offset="100%" stopColor="#93c5fd" />
-                </linearGradient>
-              </defs>
-            </svg>
-
-            {/* Time labels */}
-            <div className="absolute bottom-1 left-3 right-3 flex justify-between text-[9px] text-gray-500">
-              <span>{formatDate(minTime)}</span>
-              <span>{formatDate(now)}</span>
-              <span>{formatDate(maxTime)}</span>
-            </div>
-
-            {/* Level display */}
-            <div className="absolute top-2 right-3 bg-white/90 rounded-lg px-2 py-1 shadow-sm">
-              <div className="text-[10px] text-gray-500">{formatDate(selectedTime)} {formatTime(selectedTime)}</div>
-              <div className="text-lg font-bold text-blue-600">{currentLevel.toFixed(2)}m</div>
-            </div>
+        {/* Info bar: moon, date, weather */}
+        <div className="bg-[#3b82f6] px-4 pb-4 flex items-center justify-between">
+          {/* Moon phase */}
+          <div className="flex flex-col items-center">
+            <MoonPhase phase={moonPhase} size={40} />
+            <span className="text-white/90 text-[10px] mt-1">{illumination}% {isWaning ? 'Waning' : 'Waxing'}</span>
           </div>
 
-          {/* Time slider */}
-          <input
-            type="range"
-            min="0"
-            max="100"
-            value={sliderValue}
-            onChange={(e) => {
-              const newTime = new Date(minTime.getTime() + (parseFloat(e.target.value) / 100) * timeRange)
-              setSelectedTime(newTime)
+          {/* Date with picker */}
+          <div className="text-center">
+            <input
+              type="date"
+              value={selectedDate.toISOString().split('T')[0]}
+              onChange={(e) => setSelectedDate(new Date(e.target.value))}
+              className="bg-transparent text-white text-lg font-semibold border-0 outline-none text-center cursor-pointer"
+              style={{ colorScheme: 'dark' }}
+            />
+            <div className="text-white/80 text-sm">{formatDateLabel()}</div>
+          </div>
+
+          {/* Weather */}
+          <div className="flex flex-col items-center">
+            <Cloud size={32} className="text-white" />
+            <span className="text-white/90 text-[10px] mt-1">{cloudPercent}%</span>
+          </div>
+        </div>
+
+        {/* Graph area */}
+        <div className="relative bg-white" style={{ height: 280 }}>
+          {/* Daytime band (yellow) */}
+          <div
+            className="absolute top-0 bottom-8 bg-[#f5f5dc]/60"
+            style={{
+              left: `${(sunTimes.sunrise / 24) * 100}%`,
+              width: `${((sunTimes.sunset - sunTimes.sunrise) / 24) * 100}%`
             }}
-            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-500"
           />
 
-          {/* Quick buttons */}
-          <div className="flex gap-2">
-            <button
-              onClick={() => setSelectedTime(new Date())}
-              className="flex-1 px-3 py-2 text-sm bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-xl transition-colors border-0 outline-none font-medium"
+          {/* Horizontal grid lines and height labels */}
+          {heightLabels.map((h, i) => (
+            <div key={h} className="absolute left-0 right-0 flex items-center" style={{ top: `${(i / (heightLabels.length - 1)) * (280 - 32)}px` }}>
+              <span className="text-gray-500 text-xs w-10 text-right pr-2">{h} m</span>
+              <div className="flex-1 border-t border-gray-200" />
+            </div>
+          ))}
+
+          {/* SVG for tide curve */}
+          <svg className="absolute left-10 right-0 top-0" style={{ height: 248 }} viewBox="0 0 100 100" preserveAspectRatio="none">
+            {/* Tide curve - thin dark blue line */}
+            <path
+              d={`M ${curvePoints.map(p => `${(p.hour / 24) * 100} ${100 - (p.height / maxHeight) * 100}`).join(' L ')}`}
+              fill="none"
+              stroke="#1e3a5f"
+              strokeWidth="0.8"
+            />
+
+            {/* Current time marker (red vertical line) */}
+            {isToday && currentHour >= 0 && currentHour <= 24 && (
+              <>
+                <line
+                  x1={(currentHour / 24) * 100}
+                  y1="0"
+                  x2={(currentHour / 24) * 100}
+                  y2="100"
+                  stroke="#ef4444"
+                  strokeWidth="0.5"
+                />
+              </>
+            )}
+          </svg>
+
+          {/* Current level label */}
+          {isToday && currentLevel !== null && (
+            <div
+              className="absolute bg-white border border-gray-300 rounded px-2 py-0.5 text-sm font-medium text-red-500 shadow-sm"
+              style={{
+                left: `calc(${10 + (currentHour / 24) * 90}% - 30px)`,
+                top: 4
+              }}
             >
-              Nu
-            </button>
-            {tideData.filter(t => t.time > now).slice(0, 2).map((tide, i) => (
-              <button
-                key={i}
-                onClick={() => setSelectedTime(tide.time)}
-                className={`flex-1 px-2 py-2 text-sm rounded-xl transition-colors border-0 outline-none font-medium ${
-                  tide.type === 'high' ? 'bg-green-50 hover:bg-green-100 text-green-600' : 'bg-red-50 hover:bg-red-100 text-red-600'
-                }`}
-              >
-                {tide.type === 'high' ? 'HW' : 'LW'} {formatTime(tide.time)}
-              </button>
+              {currentLevel.toFixed(2)} m{getTrend() === 'rising' ? '↑' : '↓'}
+            </div>
+          )}
+
+          {/* Next tide tooltip */}
+          {nextTide && isToday && (
+            <div
+              className="absolute bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-lg"
+              style={{
+                right: 16,
+                top: `${100 - (nextTide.height / maxHeight) * 100}px`
+              }}
+            >
+              <div className="text-blue-600 font-semibold">{nextTide.height.toFixed(1)} m</div>
+              <div className="text-blue-500 text-sm">{formatTime(nextTide.time)}</div>
+            </div>
+          )}
+
+          {/* LAT label */}
+          <div className="absolute top-2 right-2 text-gray-400 text-xs">LAT</div>
+
+          {/* Time labels at bottom */}
+          <div className="absolute bottom-0 left-10 right-0 flex justify-between px-1 text-xs text-gray-500" style={{ height: 24 }}>
+            {[2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22].map(h => (
+              <span key={h} style={{ width: '8%', textAlign: 'center' }}>{h.toString().padStart(2, '0')}</span>
             ))}
           </div>
+        </div>
 
-          <div className="text-[10px] text-gray-400 text-center">Berekening op basis van maanstand</div>
+        {/* Bottom summary: Low and High tides */}
+        <div className="bg-[#1e3a5f] px-4 py-3 flex">
+          {/* Low tides */}
+          <div className="flex-1">
+            <div className="text-white font-semibold text-sm mb-1">Low Tides:</div>
+            {lowTides.length > 0 ? lowTides.map((t, i) => (
+              <div key={i} className="text-white/90 text-sm">
+                {t.height.toFixed(1)} m @ {formatTime(t.time)}
+              </div>
+            )) : (
+              <div className="text-white/60 text-sm">-</div>
+            )}
+          </div>
+          {/* High tides */}
+          <div className="flex-1 text-right">
+            <div className="text-white font-semibold text-sm mb-1">High Tides:</div>
+            {highTides.length > 0 ? highTides.map((t, i) => (
+              <div key={i} className="text-white/90 text-sm">
+                {t.height.toFixed(1)} m @ {formatTime(t.time)}
+              </div>
+            )) : (
+              <div className="text-white/60 text-sm">-</div>
+            )}
+          </div>
+        </div>
+
+        {/* Quick date buttons */}
+        <div className="bg-[#1e3a5f] px-4 pb-3 flex gap-2">
+          <button
+            onClick={() => { const d = new Date(); d.setDate(d.getDate() - 1); setSelectedDate(d) }}
+            className="flex-1 py-1.5 text-xs bg-white/10 hover:bg-white/20 text-white rounded transition-colors border-0"
+          >
+            Gisteren
+          </button>
+          <button
+            onClick={() => setSelectedDate(new Date())}
+            className="flex-1 py-1.5 text-xs bg-white/20 hover:bg-white/30 text-white rounded transition-colors border-0 font-medium"
+          >
+            Vandaag
+          </button>
+          <button
+            onClick={() => { const d = new Date(); d.setDate(d.getDate() + 1); setSelectedDate(d) }}
+            className="flex-1 py-1.5 text-xs bg-white/10 hover:bg-white/20 text-white rounded transition-colors border-0"
+          >
+            Morgen
+          </button>
         </div>
       </motion.div>
     </motion.div>
@@ -1424,10 +1534,32 @@ function RainRadarModal({ onClose }: { onClose: () => void }) {
   )
 }
 
+// River stations for waterflow data
+const RIVER_STATIONS = [
+  { id: 'lobith', name: 'Lobith', river: 'Rijn', normalFlow: 2300 },
+  { id: 'borgharen', name: 'Borgharen', river: 'Maas', normalFlow: 250 },
+  { id: 'tiel', name: 'Tiel', river: 'Waal', normalFlow: 1500 },
+  { id: 'deventer', name: 'Deventer', river: 'IJssel', normalFlow: 400 },
+]
+
+// Simulated river flow data
+function getSimulatedFlowData(station: typeof RIVER_STATIONS[0]) {
+  const now = new Date()
+  const dayOfYear = Math.floor((now.getTime() - new Date(now.getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24))
+  const seasonalFactor = 1 + 0.4 * Math.sin((dayOfYear - 100) * Math.PI / 182)
+  const randomFactor = 0.9 + Math.random() * 0.2
+  return Math.round(station.normalFlow * seasonalFactor * randomFactor)
+}
+
 export function FishingWidget() {
   const { current, loading, fetchWeather, getFishingScore, pressureHistory, getPressureTrend, hourlyForecast, precipitation15min } = useWeatherStore()
   const position = useGPSStore(state => state.position)
   const showWeatherWidget = useSettingsStore(state => state.showWeatherWidget)
+  const showTideSection = useSettingsStore(state => state.showTideWidget)
+  const showBuienradarSection = useSettingsStore(state => state.showBuienradarWidget)
+  const showWaterflowSection = useSettingsStore(state => state.showWaterflowWidget)
+  const showForecastSection = useSettingsStore(state => state.showForecastSlider)
+  const showWaterDataSection = useSettingsStore(state => state.showWaterDataWidget)
   const { waterData, station, fetchData: fetchWaterData } = useWaterDataStore()
 
   const [isExpanded, setIsExpanded] = useState(false)
@@ -1436,6 +1568,14 @@ export function FishingWidget() {
   const [moonDaysOffset, setMoonDaysOffset] = useState(0)
   const [showPressureModal, setShowPressureModal] = useState(false)
   const [showRadarModal, setShowRadarModal] = useState(false)
+  const [riverFlows, setRiverFlows] = useState<Map<string, number>>(new Map())
+
+  // Fetch river flow data
+  useEffect(() => {
+    const flows = new Map<string, number>()
+    RIVER_STATIONS.forEach(s => flows.set(s.id, getSimulatedFlowData(s)))
+    setRiverFlows(flows)
+  }, [])
 
   // Fetch weather and water data
   useEffect(() => {
@@ -1667,79 +1807,109 @@ export function FishingWidget() {
                     </div>
                   </div>
 
-                  {/* Water data with station picker */}
-                  <div className="space-y-2">
-                    {/* Station picker inline */}
-                    <div className="flex items-center gap-2">
-                      <Droplets size={14} className="text-cyan-500" />
-                      <select
-                        value={station?.id || ''}
-                        onChange={(e) => {
-                          e.stopPropagation()
-                          const newStation = RWS_STATIONS.find(s => s.id === e.target.value)
-                          if (newStation) {
-                            const { setStation, fetchData } = useWaterDataStore.getState()
-                            setStation(newStation)
-                            // Fetch new data for the selected station
-                            setTimeout(() => fetchData(), 50)
-                          }
-                        }}
-                        className="flex-1 px-2 py-1 text-xs border border-gray-200 rounded-lg bg-white/80 outline-none focus:ring-1 focus:ring-cyan-400"
-                      >
-                        {RWS_STATIONS.map(s => (
-                          <option key={s.id} value={s.id}>{s.name}</option>
-                        ))}
-                      </select>
-                    </div>
+                  {/* Water data with station picker - conditional */}
+                  {showWaterDataSection && (
+                    <div className="space-y-2">
+                      {/* Station picker inline */}
+                      <div className="flex items-center gap-2">
+                        <Droplets size={14} className="text-cyan-500" />
+                        <select
+                          value={station?.id || ''}
+                          onChange={(e) => {
+                            e.stopPropagation()
+                            const newStation = RWS_STATIONS.find(s => s.id === e.target.value)
+                            if (newStation) {
+                              const { setStation, fetchData } = useWaterDataStore.getState()
+                              setStation(newStation)
+                              // Fetch new data for the selected station
+                              setTimeout(() => fetchData(), 50)
+                            }
+                          }}
+                          className="flex-1 px-2 py-1 text-xs border border-gray-200 rounded-lg bg-white/80 outline-none focus:ring-1 focus:ring-cyan-400"
+                        >
+                          {RWS_STATIONS.map(s => (
+                            <option key={s.id} value={s.id}>{s.name}</option>
+                          ))}
+                        </select>
+                      </div>
 
-                    {/* Water data grid - all 4 items (display only) */}
-                    <div className="grid grid-cols-2 gap-2">
-                      {waterData?.temperature !== undefined && (
-                        <div className="bg-cyan-50 rounded-lg p-2">
-                          <div className="flex items-center gap-1 text-[10px] text-gray-500">
-                            <Thermometer size={12} className="text-cyan-500" />
-                            <span>Water</span>
+                      {/* Water data grid - all 4 items (display only) */}
+                      <div className="grid grid-cols-2 gap-2">
+                        {waterData?.temperature !== undefined && (
+                          <div className="bg-cyan-50 rounded-lg p-2">
+                            <div className="flex items-center gap-1 text-[10px] text-gray-500">
+                              <Thermometer size={12} className="text-cyan-500" />
+                              <span>Water</span>
+                            </div>
+                            <div className="text-sm font-bold text-cyan-600">
+                              {waterData.temperature.toFixed(1)}°C
+                            </div>
                           </div>
-                          <div className="text-sm font-bold text-cyan-600">
-                            {waterData.temperature.toFixed(1)}°C
+                        )}
+                        {waterData?.waveHeight !== undefined && (
+                          <div className="bg-blue-50 rounded-lg p-2">
+                            <div className="flex items-center gap-1 text-[10px] text-gray-500">
+                              <Waves size={12} className="text-blue-500" />
+                              <span>Golven</span>
+                            </div>
+                            <div className="text-sm font-bold text-blue-600">
+                              {waterData.waveHeight} cm
+                            </div>
                           </div>
-                        </div>
-                      )}
-                      {waterData?.waveHeight !== undefined && (
-                        <div className="bg-blue-50 rounded-lg p-2">
-                          <div className="flex items-center gap-1 text-[10px] text-gray-500">
-                            <Waves size={12} className="text-blue-500" />
-                            <span>Golven</span>
+                        )}
+                        {waterData?.currentSpeed !== undefined && (
+                          <div className="bg-green-50 rounded-lg p-2">
+                            <div className="flex items-center gap-1 text-[10px] text-gray-500">
+                              <Navigation size={12} className="text-green-500" />
+                              <span>Stroming</span>
+                            </div>
+                            <div className="text-sm font-bold text-green-600">
+                              {waterData.currentSpeed} cm/s
+                            </div>
                           </div>
-                          <div className="text-sm font-bold text-blue-600">
-                            {waterData.waveHeight} cm
+                        )}
+                        {waterData?.currentDirection !== undefined && (
+                          <div className="bg-purple-50 rounded-lg p-2">
+                            <div className="flex items-center gap-1 text-[10px] text-gray-500">
+                              <Navigation size={12} className="text-purple-500" style={{ transform: `rotate(${waterData.currentDirection}deg)` }} />
+                              <span>Richting</span>
+                            </div>
+                            <div className="text-sm font-bold text-purple-600">
+                              {Math.round(waterData.currentDirection)}°
+                            </div>
                           </div>
-                        </div>
-                      )}
-                      {waterData?.currentSpeed !== undefined && (
-                        <div className="bg-green-50 rounded-lg p-2">
-                          <div className="flex items-center gap-1 text-[10px] text-gray-500">
-                            <Navigation size={12} className="text-green-500" />
-                            <span>Stroming</span>
-                          </div>
-                          <div className="text-sm font-bold text-green-600">
-                            {waterData.currentSpeed} cm/s
-                          </div>
-                        </div>
-                      )}
-                      {waterData?.currentDirection !== undefined && (
-                        <div className="bg-purple-50 rounded-lg p-2">
-                          <div className="flex items-center gap-1 text-[10px] text-gray-500">
-                            <Navigation size={12} className="text-purple-500" style={{ transform: `rotate(${waterData.currentDirection}deg)` }} />
-                            <span>Richting</span>
-                          </div>
-                          <div className="text-sm font-bold text-purple-600">
-                            {Math.round(waterData.currentDirection)}°
-                          </div>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
-                  </div>
+                  )}
+
+                  {/* Waterafvoer (river discharge) - conditional */}
+                  {showWaterflowSection && (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-[10px] text-gray-500">
+                        <BarChart3 size={14} className="text-cyan-600" />
+                        <span className="font-medium">Waterafvoer rivieren</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        {RIVER_STATIONS.map(rs => {
+                          const flow = riverFlows.get(rs.id) || 0
+                          const ratio = flow / rs.normalFlow
+                          const status = ratio < 0.7 ? { text: 'Laag', color: 'text-orange-500', bg: 'bg-orange-50' }
+                            : ratio > 1.3 ? { text: 'Hoog', color: 'text-blue-600', bg: 'bg-blue-50' }
+                            : { text: 'Normaal', color: 'text-green-500', bg: 'bg-green-50' }
+                          return (
+                            <div key={rs.id} className={`${status.bg} rounded-lg p-2`}>
+                              <div className="text-[10px] text-gray-500">{rs.river}</div>
+                              <div className={`text-sm font-bold ${status.color}`}>
+                                {flow.toLocaleString()} m³/s
+                              </div>
+                              <div className={`text-[9px] ${status.color}`}>{status.text}</div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Weather details - pressure clickable */}
                   <div className="grid grid-cols-2 gap-2 text-xs">
@@ -1763,40 +1933,44 @@ export function FishingWidget() {
                     </button>
                   </div>
 
-                  {/* Rain radar button */}
-                  <button
-                    onClick={() => setShowRadarModal(true)}
-                    className="w-full flex items-center gap-2 p-2 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors border-0 cursor-pointer"
-                  >
-                    <CloudRain size={16} className="text-blue-500" />
-                    <span className="text-sm text-blue-700 font-medium">Buienradar</span>
-                    <span className="text-xs text-blue-500 ml-auto">Live kaart</span>
-                    <ChevronRight size={14} className="text-blue-400" />
-                  </button>
+                  {/* Rain radar button - conditional */}
+                  {showBuienradarSection && (
+                    <>
+                      <button
+                        onClick={() => setShowRadarModal(true)}
+                        className="w-full flex items-center gap-2 p-2 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors border-0 cursor-pointer"
+                      >
+                        <CloudRain size={16} className="text-blue-500" />
+                        <span className="text-sm text-blue-700 font-medium">Buienradar</span>
+                        <span className="text-xs text-blue-500 ml-auto">Live kaart</span>
+                        <ChevronRight size={14} className="text-blue-400" />
+                      </button>
 
-                  {/* Precipitation graph - clickable */}
-                  {precipitation15min.length > 0 && (
-                    <button
-                      onClick={() => setShowPrecipModal(true)}
-                      className="w-full border-0 bg-transparent p-0 cursor-pointer text-left"
-                    >
-                      <div className="hover:bg-gray-50 rounded-lg p-1 -m-1 transition-colors">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-[10px] text-gray-500">Neerslag komende 2 uur</span>
-                          <ChevronRight size={12} className="text-gray-400" />
-                        </div>
-                        <PrecipitationGraph data={precipitation15min} />
-                      </div>
-                    </button>
+                      {/* Precipitation graph - clickable */}
+                      {precipitation15min.length > 0 && (
+                        <button
+                          onClick={() => setShowPrecipModal(true)}
+                          className="w-full border-0 bg-transparent p-0 cursor-pointer text-left"
+                        >
+                          <div className="hover:bg-gray-50 rounded-lg p-1 -m-1 transition-colors">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-[10px] text-gray-500">Neerslag komende 2 uur</span>
+                              <ChevronRight size={12} className="text-gray-400" />
+                            </div>
+                            <PrecipitationGraph data={precipitation15min} />
+                          </div>
+                        </button>
+                      )}
+                    </>
                   )}
 
-                  {/* Hourly forecast */}
-                  {hourlyForecast.length > 0 && (
+                  {/* Hourly forecast - conditional */}
+                  {showForecastSection && hourlyForecast.length > 0 && (
                     <HourlyForecast hourly={hourlyForecast} />
                   )}
 
-                  {/* Next tides - clickable */}
-                  {nextTides.length > 0 && (
+                  {/* Next tides - clickable - conditional */}
+                  {showTideSection && nextTides.length > 0 && (
                     <button
                       onClick={() => setShowTideModal(true)}
                       className="w-full border-0 bg-transparent p-0 cursor-pointer text-left"

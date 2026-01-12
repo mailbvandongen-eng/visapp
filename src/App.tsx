@@ -10,9 +10,6 @@ import { InfoButton } from './components/UI/InfoButton'
 import { ResetButton } from './components/UI/ResetButton'
 import { PresetButtons } from './components/UI/PresetButtons'
 import { FishingWidget } from './components/Weather/FishingWidget'
-import { TideWidget } from './components/Weather/TideWidget'
-import { BuienradarWidget } from './components/Weather/BuienradarWidget'
-import { WaterflowWidget } from './components/Weather/WaterflowWidget'
 import { AddCatchButton } from './components/Catch/AddCatchButton'
 import { CatchMarkers } from './components/Catch/CatchMarkers'
 import { SpotMarkers } from './components/Spots/SpotMarkers'
@@ -45,9 +42,6 @@ function App() {
 
         {/* Top bar: Weather (left), Search & Menu (right) */}
         <FishingWidget />
-        <TideWidget />
-        <BuienradarWidget />
-        <WaterflowWidget />
         <SearchBox />
         <HamburgerMenu />
 
