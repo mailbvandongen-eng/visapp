@@ -1,7 +1,7 @@
 import VectorLayer from 'ol/layer/Vector'
 import VectorSource from 'ol/source/Vector'
 import GeoJSON from 'ol/format/GeoJSON'
-import { Style, Icon, Circle, Fill, Stroke } from 'ol/style'
+import { VIS_LAYER_STYLES } from './iconStyles'
 
 // Overpass API query for marinas and moorings in Netherlands
 const OVERPASS_QUERY = `
@@ -12,7 +12,7 @@ area["name"="Nederland"]->.nl;
   node["mooring"="yes"](area.nl);
   way["leisure"="marina"](area.nl);
 );
-out center;
+out center tags;
 `
 
 export async function createAanlegsteigersLayer(): Promise<VectorLayer<VectorSource>> {
@@ -20,14 +20,9 @@ export async function createAanlegsteigersLayer(): Promise<VectorLayer<VectorSou
 
   const layer = new VectorLayer({
     source,
-    style: new Style({
-      image: new Circle({
-        radius: 8,
-        fill: new Fill({ color: '#2196F3' }),
-        stroke: new Stroke({ color: '#fff', width: 2 })
-      })
-    }),
+    style: VIS_LAYER_STYLES.aanlegsteigers,
     properties: {
+      title: 'Aanlegsteigers',
       name: 'Aanlegsteigers'
     }
   })
@@ -44,23 +39,31 @@ export async function createAanlegsteigersLayer(): Promise<VectorLayer<VectorSou
     // Convert to GeoJSON
     const features = data.elements
       .filter((el: any) => el.lat && el.lon || el.center)
-      .map((el: any) => ({
-        type: 'Feature',
-        geometry: {
-          type: 'Point',
-          coordinates: [
-            el.lon || el.center?.lon,
-            el.lat || el.center?.lat
-          ]
-        },
-        properties: {
-          id: el.id,
-          name: el.tags?.name || 'Aanlegsteiger',
-          type: el.tags?.leisure || el.tags?.mooring || 'marina',
-          website: el.tags?.website,
-          phone: el.tags?.phone
+      .map((el: any) => {
+        const tags = el.tags || {}
+        return {
+          type: 'Feature',
+          geometry: {
+            type: 'Point',
+            coordinates: [
+              el.lon || el.center?.lon,
+              el.lat || el.center?.lat
+            ]
+          },
+          properties: {
+            layerType: 'aanlegsteiger',
+            id: el.id,
+            name: tags.name || null,
+            type: tags.leisure || tags.mooring || 'marina',
+            operator: tags.operator || null,
+            access: tags.access || null,
+            fee: tags.fee || null,
+            capacity: tags.capacity || null,
+            website: tags.website || tags['contact:website'] || null,
+            phone: tags.phone || tags['contact:phone'] || null
+          }
         }
-      }))
+      })
 
     const geojson = {
       type: 'FeatureCollection',

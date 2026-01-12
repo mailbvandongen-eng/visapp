@@ -1,2 +1,0 @@
-import{T as e}from"./index-Bm30xzOy.js";import{T as r}from"./TileWMS-DTkjyxuD.js";import"./common-DpNHzTjJ.js";function i(){return new e({source:new r({url:"https://service.pdok.nl/rws/ahn/wms/v1_0",params:{LAYERS:"dtm_05m",TILED:!0,FORMAT:"image/png"},serverType:"geoserver",crossOrigin:"anonymous"}),opacity:.7,properties:{name:"Dieptekaart"}})}export{i as createDieptekaartLayer};
-//# sourceMappingURL=dieptekaartOL-CJXElWDN.js.map

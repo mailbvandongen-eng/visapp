@@ -1,20 +1,20 @@
 import TileLayer from 'ol/layer/Tile'
-import TileWMS from 'ol/source/TileWMS'
+import XYZ from 'ol/source/XYZ'
 
-export function createDieptekaartLayer(): TileLayer<TileWMS> {
+// OpenSeaMap nautical chart overlay
+// Shows depth contours, buoys, beacons, and other nautical features
+// Source: https://openseamap.org
+export function createDieptekaartLayer(): TileLayer<XYZ> {
   return new TileLayer({
-    source: new TileWMS({
-      url: 'https://service.pdok.nl/rws/ahn/wms/v1_0',
-      params: {
-        'LAYERS': 'dtm_05m',
-        'TILED': true,
-        'FORMAT': 'image/png'
-      },
-      serverType: 'geoserver',
-      crossOrigin: 'anonymous'
+    source: new XYZ({
+      url: 'https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png',
+      attributions: '© OpenSeaMap contributors',
+      crossOrigin: 'anonymous',
+      maxZoom: 18
     }),
-    opacity: 0.7,
+    opacity: 0.9,
     properties: {
+      title: 'Dieptekaart',
       name: 'Dieptekaart'
     }
   })

@@ -1,2 +1,0 @@
-import{T as e}from"./index-Bm30xzOy.js";import{T as r}from"./TileWMS-DTkjyxuD.js";import"./common-DpNHzTjJ.js";function s(){return new e({properties:{title:"PDOK Water NL",type:"wms"},visible:!0,opacity:.6,source:new r({url:"https://service.pdok.nl/brt/top10nl/wms/v1_0",params:{LAYERS:"waterdeel",TILED:!0,FORMAT:"image/png",TRANSPARENT:!0,STYLES:""},attributions:"© Kadaster / PDOK TOP10NL",crossOrigin:"anonymous"})})}export{s as createPDOKWaterLayer};
-//# sourceMappingURL=pdokWaterOL-yMI2Rztu.js.map

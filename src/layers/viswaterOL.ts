@@ -31,6 +31,7 @@ export async function createViswaterLayer(): Promise<VectorLayer<VectorSource>> 
       })
     }),
     properties: {
+      title: 'Viswater',
       name: 'Viswater'
     }
   })
@@ -48,6 +49,7 @@ export async function createViswaterLayer(): Promise<VectorLayer<VectorSource>> 
 
     data.elements.forEach((el: any) => {
       if (el.type === 'way' && el.geometry) {
+        const tags = el.tags || {}
         features.push({
           type: 'Feature',
           geometry: {
@@ -55,10 +57,12 @@ export async function createViswaterLayer(): Promise<VectorLayer<VectorSource>> 
             coordinates: [el.geometry.map((p: any) => [p.lon, p.lat])]
           },
           properties: {
+            layerType: 'viswater',
             id: el.id,
-            name: el.tags?.name || 'Viswater',
-            fishing: el.tags?.fishing,
-            access: el.tags?.access
+            name: tags.name || null,
+            fishing: tags.fishing,
+            access: tags.access,
+            operator: tags.operator || null
           }
         })
       }

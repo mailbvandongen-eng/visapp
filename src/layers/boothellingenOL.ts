@@ -1,7 +1,7 @@
 import VectorLayer from 'ol/layer/Vector'
 import VectorSource from 'ol/source/Vector'
 import GeoJSON from 'ol/format/GeoJSON'
-import { Style, Circle, Fill, Stroke } from 'ol/style'
+import { VIS_LAYER_STYLES } from './iconStyles'
 
 // Overpass API query for slipways (trailer ramps) in Netherlands
 const OVERPASS_QUERY = `
@@ -19,13 +19,7 @@ export async function createBoothellingenLayer(): Promise<VectorLayer<VectorSour
 
   const layer = new VectorLayer({
     source,
-    style: new Style({
-      image: new Circle({
-        radius: 8,
-        fill: new Fill({ color: '#4CAF50' }),
-        stroke: new Stroke({ color: '#fff', width: 2 })
-      })
-    }),
+    style: VIS_LAYER_STYLES.trailerhellingen,
     properties: {
       title: 'Trailerhellingen',
       name: 'Trailerhellingen'
