@@ -24,8 +24,10 @@ export function SettingsPanel() {
   const baseFontSize = 14 * fontScale / 100
 
   // Handle background change - also apply to layer visibility
-  const handleBackgroundChange = (value: 'OpenStreetMap' | 'Luchtfoto') => {
+  const handleBackgroundChange = (value: 'OpenStreetMap' | 'Luchtfoto' | 'Terrein') => {
     setDefaultBackground(value)
+    setLayerVisibility('Terrein', value === 'Terrein')
+    setLayerVisibility('Hillshade', value === 'Terrein')
     setLayerVisibility('OpenStreetMap', value === 'OpenStreetMap')
     setLayerVisibility('Luchtfoto', value === 'Luchtfoto')
     setLayerVisibility('Labels Overlay', value === 'Luchtfoto')
@@ -107,9 +109,10 @@ export function SettingsPanel() {
                 <p className="text-sm font-medium text-gray-700">Standaard achtergrond</p>
                 <select
                   value={defaultBackground}
-                  onChange={(e) => handleBackgroundChange(e.target.value as 'OpenStreetMap' | 'Luchtfoto')}
+                  onChange={(e) => handleBackgroundChange(e.target.value as 'OpenStreetMap' | 'Luchtfoto' | 'Terrein')}
                   className="mt-1 w-full px-2 py-1 text-sm border border-gray-200 rounded-lg bg-white outline-none focus:ring-2 focus:ring-blue-400"
                 >
+                  <option value="Terrein">Terrein (reliëf)</option>
                   <option value="OpenStreetMap">OpenStreetMap</option>
                   <option value="Luchtfoto">Satelliet</option>
                 </select>

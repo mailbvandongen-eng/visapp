@@ -1,7 +1,7 @@
 {
   "name": "visapp",
   "private": true,
-  "version": "1.2.24",
+  "version": "1.2.28",
   "type": "module",
   "scripts": {
     "dev": "vite",

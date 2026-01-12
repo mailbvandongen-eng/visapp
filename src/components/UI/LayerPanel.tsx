@@ -11,6 +11,7 @@ const LAYER_CONFIG = [
 ]
 
 const BASE_LAYERS = [
+  { name: 'Terrein', label: 'Terrein' },
   { name: 'OpenStreetMap', label: 'Kaart' },
   { name: 'Luchtfoto', label: 'Satelliet' }
 ]
@@ -25,6 +26,8 @@ export function LayerPanel() {
     BASE_LAYERS.forEach(layer => {
       setLayerVisibility(layer.name, layer.name === layerName)
     })
+    // Handle Hillshade for Terrein mode
+    setLayerVisibility('Hillshade', layerName === 'Terrein')
     // Auto-enable labels overlay when switching to satellite
     if (layerName === 'Luchtfoto') {
       setLayerVisibility('Labels Overlay', true)

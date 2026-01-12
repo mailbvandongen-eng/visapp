@@ -1,5 +1,4 @@
 import './style.css'
-import { useEffect } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import { MapContainer } from './components/Map/MapContainer'
 import { LongPressMenu } from './components/Map/LongPressMenu'
@@ -18,22 +17,12 @@ import { AddSpotForm } from './components/Spots/AddSpotForm'
 import { LayerPanel } from './components/UI/LayerPanel'
 import { SettingsPanel } from './components/UI/SettingsPanel'
 import { PasswordGate } from './components/Auth/PasswordGate'
-import { useUIStore, useSettingsStore, useLayerStore } from './store'
+import { useUIStore } from './store'
 
 function App() {
   const spotFormOpen = useUIStore(state => state.spotFormOpen)
   const spotFormLocation = useUIStore(state => state.spotFormLocation)
   const closeSpotForm = useUIStore(state => state.closeSpotForm)
-  const defaultBackground = useSettingsStore(state => state.defaultBackground)
-  const setLayerVisibility = useLayerStore(state => state.setLayerVisibility)
-
-  // Initialize background layer based on saved setting
-  useEffect(() => {
-    // Set the correct background based on defaultBackground setting
-    setLayerVisibility('OpenStreetMap', defaultBackground === 'OpenStreetMap')
-    setLayerVisibility('Luchtfoto', defaultBackground === 'Luchtfoto')
-    setLayerVisibility('Labels Overlay', defaultBackground === 'Luchtfoto')
-  }, []) // Only run once on mount
 
   return (
     <PasswordGate>

@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
-export type DefaultBackground = 'OpenStreetMap' | 'Luchtfoto'
+export type DefaultBackground = 'OpenStreetMap' | 'Luchtfoto' | 'Terrein'
 export type WidgetId = 'wind' | 'tide' | 'forecast' | 'waterData'
 
 interface SettingsState {
@@ -43,7 +43,7 @@ interface SettingsState {
 export const useSettingsStore = create<SettingsState>()(
   persist(
     (set) => ({
-      defaultBackground: 'OpenStreetMap',
+      defaultBackground: 'Terrein',
       showScaleBar: true,
       gpsAutoStart: false,
       showAccuracyCircle: true,

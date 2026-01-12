@@ -6,7 +6,7 @@ import { useMap } from '../../hooks/useMap'
 import { useLayerStore, useMapStore, useSettingsStore, useGPSStore } from '../../store'
 import { getImmediateLoadLayers } from '../../layers/layerRegistry'
 
-const BASE_LAYERS = ['OpenStreetMap', 'Luchtfoto']
+const BASE_LAYERS = ['OpenStreetMap', 'Luchtfoto', 'Terrein']
 
 export function MapContainer() {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -15,6 +15,7 @@ export function MapContainer() {
   const map = useMapStore(state => state.map)
   const registerLayer = useLayerStore(state => state.registerLayer)
   const setLayerVisibility = useLayerStore(state => state.setLayerVisibility)
+  const setLayerOpacity = useLayerStore(state => state.setLayerOpacity)
   const defaultBackground = useSettingsStore(state => state.defaultBackground)
   const gpsAutoStart = useSettingsStore(state => state.gpsAutoStart)
   const startTracking = useGPSStore(state => state.startTracking)
@@ -24,16 +25,47 @@ export function MapContainer() {
 
     console.log('Initializing map layers...')
 
-    // Base layers
+    // Get the saved background preference - default to Terrein (hillshade + light)
+    const bgSetting = useSettingsStore.getState().defaultBackground || 'Terrein'
+    const showOSM = bgSetting === 'OpenStreetMap'
+    const showSatellite = bgSetting === 'Luchtfoto'
+    const showTerrein = bgSetting === 'Terrein'
+
+    console.log('Background setting:', bgSetting)
+
+    // Hillshade layer (bottom, subtle terrain relief)
+    const hillshadeLayer = new TileLayer({
+      properties: { title: 'Hillshade', type: 'base' },
+      visible: showTerrein,
+      opacity: 0.15,
+      source: new XYZ({
+        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}',
+        attributions: '© Esri',
+        maxZoom: 18
+      })
+    })
+
+    // OSM Light (CartoDB Positron) - clean with visible water
+    const osmLightLayer = new TileLayer({
+      properties: { title: 'Terrein', type: 'base' },
+      visible: showTerrein,
+      source: new XYZ({
+        url: 'https://{a-d}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+        attributions: '© OpenStreetMap contributors © CARTO'
+      })
+    })
+
+    // Regular OSM
     const osmLayer = new TileLayer({
       properties: { title: 'OpenStreetMap', type: 'base' },
-      visible: true,
+      visible: showOSM,
       source: new OSM()
     })
 
+    // Satellite
     const satelliteLayer = new TileLayer({
       properties: { title: 'Luchtfoto', type: 'base' },
-      visible: false,
+      visible: showSatellite,
       source: new XYZ({
         url: 'https://service.pdok.nl/hwh/luchtfotorgb/wmts/v1_0/Actueel_orthoHR/EPSG:3857/{z}/{x}/{y}.jpeg',
         attributions: '© Kadaster / PDOK Luchtfoto',
@@ -44,20 +76,32 @@ export function MapContainer() {
     // Labels overlay for satellite view
     const labelsOverlay = new TileLayer({
       properties: { title: 'Labels Overlay', type: 'overlay' },
-      visible: false,
+      visible: showSatellite,
       source: new XYZ({
         url: 'https://{a-d}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}.png',
         attributions: '© OpenStreetMap contributors © CARTO'
       })
     })
 
+    // Add layers in correct order (hillshade first, then the rest)
+    map.addLayer(hillshadeLayer)
+    map.addLayer(osmLightLayer)
     map.addLayer(osmLayer)
     map.addLayer(satelliteLayer)
     map.addLayer(labelsOverlay)
 
+    registerLayer('Hillshade', hillshadeLayer)
+    registerLayer('Terrein', osmLightLayer)
     registerLayer('OpenStreetMap', osmLayer)
     registerLayer('Luchtfoto', satelliteLayer)
     registerLayer('Labels Overlay', labelsOverlay)
+
+    // Also update the layer store visibility to match
+    setLayerVisibility('Hillshade', showTerrein)
+    setLayerVisibility('Terrein', showTerrein)
+    setLayerVisibility('OpenStreetMap', showOSM)
+    setLayerVisibility('Luchtfoto', showSatellite)
+    setLayerVisibility('Labels Overlay', showSatellite)
 
     map.updateSize()
 

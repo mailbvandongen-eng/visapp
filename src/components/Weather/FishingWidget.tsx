@@ -1433,7 +1433,7 @@ export function FishingWidget() {
   const [isExpanded, setIsExpanded] = useState(false)
   const [showTideModal, setShowTideModal] = useState(false)
   const [showPrecipModal, setShowPrecipModal] = useState(false)
-  const [showMoonModal, setShowMoonModal] = useState(false)
+  const [moonDaysOffset, setMoonDaysOffset] = useState(0)
   const [showPressureModal, setShowPressureModal] = useState(false)
   const [showRadarModal, setShowRadarModal] = useState(false)
 
@@ -1514,13 +1514,13 @@ export function FishingWidget() {
 
       {/* Widget */}
       <motion.div
-        className={`fixed left-2 z-[1500] bg-white shadow-lg border border-gray-200 select-none rounded-xl ${
-          isExpanded ? 'top-2 bottom-2 w-[220px] overflow-y-auto' : ''
-        }`}
-        style={!isExpanded ? { top: 'calc(max(0.5rem, env(safe-area-inset-top, 0.5rem)) + 52px)' } : undefined}
+        className="fixed left-2 z-[1500] bg-white shadow-lg border border-gray-200 select-none rounded-xl"
+        style={isExpanded
+          ? { top: '0.5rem', bottom: '0.5rem', width: '220px', overflowY: 'auto' }
+          : { top: 'max(0.5rem, env(safe-area-inset-top, 0.5rem))' }
+        }
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
-        layout
       >
         {loading && !current ? (
           <div className="p-3 flex items-center gap-2">
@@ -1596,19 +1596,58 @@ export function FishingWidget() {
                     {weatherCodeDescriptions[current.weatherCode] || 'Onbekend'}
                   </div>
 
-                  {/* Moon phase section - clickable */}
-                  <button
-                    onClick={() => setShowMoonModal(true)}
-                    className="w-full bg-slate-800 hover:bg-slate-700 rounded-lg p-3 flex items-center gap-3 border-0 outline-none cursor-pointer transition-colors"
-                  >
-                    <MoonPhase phase={moonPhase} size={36} />
-                    <div className="flex-1 text-left">
-                      <div className="text-white text-sm font-medium">{getMoonPhaseName(moonPhase)}</div>
-                      <div className="text-slate-400 text-[10px]">{Math.round(moonPhase * 100)}% verlicht</div>
-                      <div className={`text-[10px] font-medium ${tideType.color}`}>{tideType.type}</div>
-                    </div>
-                    <ChevronRight size={14} className="text-slate-400" />
-                  </button>
+                  {/* Moon phase section - inline with slider */}
+                  {(() => {
+                    const selectedDate = new Date()
+                    selectedDate.setDate(selectedDate.getDate() + moonDaysOffset)
+                    const selectedMoonPhase = getMoonPhase(selectedDate)
+                    const selectedTideType = getTideType(selectedMoonPhase)
+                    const dateLabel = moonDaysOffset === 0 ? 'Vandaag' :
+                      moonDaysOffset === 1 ? 'Morgen' :
+                      moonDaysOffset === -1 ? 'Gisteren' :
+                      selectedDate.toLocaleDateString('nl-NL', { weekday: 'short', day: 'numeric', month: 'short' })
+
+                    return (
+                      <div className="bg-gray-50 rounded-lg p-3 space-y-3">
+                        <div className="flex items-center gap-3">
+                          <MoonPhase phase={selectedMoonPhase} size={40} />
+                          <div className="flex-1">
+                            <div className="text-gray-800 text-sm font-medium">{getMoonPhaseName(selectedMoonPhase)}</div>
+                            <div className="text-gray-500 text-[10px]">{Math.round(selectedMoonPhase * 100)}% verlicht</div>
+                            <div className={`text-[10px] font-medium ${selectedTideType.color}`}>{selectedTideType.type}</div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-xs text-gray-600">{dateLabel}</div>
+                            {moonDaysOffset !== 0 && (
+                              <button
+                                onClick={() => setMoonDaysOffset(0)}
+                                className="text-[10px] text-blue-500 hover:underline border-0 bg-transparent p-0 outline-none"
+                              >
+                                Vandaag
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Slider -14 to +14 days */}
+                        <div className="space-y-1">
+                          <input
+                            type="range"
+                            min="-14"
+                            max="14"
+                            value={moonDaysOffset}
+                            onChange={(e) => setMoonDaysOffset(parseInt(e.target.value))}
+                            className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                          />
+                          <div className="flex justify-between text-[9px] text-gray-400">
+                            <span>-14d</span>
+                            <span>Nu</span>
+                            <span>+14d</span>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })()}
 
                   {/* Activity bar */}
                   <div className="space-y-1">
@@ -1825,12 +1864,6 @@ export function FishingWidget() {
       <AnimatePresence>
         {showPrecipModal && hourlyForecast.length > 0 && (
           <PrecipitationModal hourlyData={hourlyForecast} onClose={() => setShowPrecipModal(false)} />
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {showMoonModal && (
-          <MoonModal onClose={() => setShowMoonModal(false)} />
         )}
       </AnimatePresence>
 
