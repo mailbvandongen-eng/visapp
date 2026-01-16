@@ -219,29 +219,26 @@ function MoonPhase({ phase, size = 20 }: { phase: number; size?: number }) {
         <defs>
           {/* Gradient for soft terminator edge */}
           <linearGradient id={`moonShadow-${size}`} x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="rgba(5,5,15,0.97)" />
-            <stop offset="40%" stopColor="rgba(5,5,15,0.95)" />
-            <stop offset="100%" stopColor="rgba(5,5,15,0)" />
+            <stop offset="0%" stopColor="rgba(15,20,35,0.75)" />
+            <stop offset="40%" stopColor="rgba(15,20,35,0.65)" />
+            <stop offset="100%" stopColor="rgba(15,20,35,0)" />
           </linearGradient>
         </defs>
 
         {phase < 0.03 || phase > 0.97 ? (
-          // New moon - almost completely dark
-          <circle cx="50" cy="50" r="50" fill="rgba(5,5,15,0.95)" />
+          // New moon - dark but still see some texture
+          <circle cx="50" cy="50" r="50" fill="rgba(15,20,35,0.80)" />
         ) : phase > 0.47 && phase < 0.53 ? (
           // Full moon - no shadow
           null
         ) : (
-          // Partial phase - elliptical terminator
+          // Partial phase - elliptical terminator with semi-transparent shadow
           <ellipse
             cx={isWaxing ? 50 + terminatorX * 50 : 50 + terminatorX * 50}
             cy="50"
             rx={Math.abs(50 * (1 - Math.abs(terminatorX * 0.8)))}
             ry="50"
-            fill="rgba(5,5,15,0.95)"
-            style={{
-              transform: isWaxing ? 'none' : 'none'
-            }}
+            fill="rgba(15,20,35,0.70)"
           />
         )}
       </svg>
@@ -837,9 +834,13 @@ function getSunTimes(date: Date, lat: number = 52.1): { sunrise: number; sunset:
 
 // Tide Modal matching the screenshot design
 function TideModal({ onClose }: { onClose: () => void }) {
-  const [selectedDate, setSelectedDate] = useState(new Date())
   const position = useGPSStore(state => state.position)
   const { current } = useWeatherStore()
+
+  // Total hours to show (7 days = 168 hours)
+  const TOTAL_HOURS = 168
+  // Visible window (24 hours at a time)
+  const VISIBLE_HOURS = 24
 
   const TIDE_STATIONS = [
     { id: 'SCHEVNGN', name: 'Scheveningen', lat: 52.1033, lng: 4.2664 },
@@ -864,30 +865,43 @@ function TideModal({ onClose }: { onClose: () => void }) {
     position ? findNearestStation(position.lat, position.lng) : TIDE_STATIONS[0]
   )
 
-  // Get tide data for the selected date (24h view)
-  const tideData = useMemo(() => {
-    const startDate = new Date(selectedDate)
-    startDate.setHours(0, 0, 0, 0)
-    return calculateTides(startDate, 2).filter(t => {
-      const tideDay = new Date(t.time)
-      tideDay.setHours(0, 0, 0, 0)
-      const selDay = new Date(selectedDate)
-      selDay.setHours(0, 0, 0, 0)
-      return tideDay.getTime() === selDay.getTime()
-    })
-  }, [selectedDate])
+  // Slider position in hours from start (0 = now)
+  const [sliderOffset, setSliderOffset] = useState(0)
 
-  const lowTides = tideData.filter(t => t.type === 'low')
-  const highTides = tideData.filter(t => t.type === 'high')
+  // Base time is current time rounded down to hour
+  const baseTime = useMemo(() => {
+    const now = new Date()
+    now.setMinutes(0, 0, 0)
+    return now
+  }, [])
+
+  // Visible window start time
+  const windowStartTime = useMemo(() => {
+    return new Date(baseTime.getTime() + sliderOffset * 60 * 60 * 1000)
+  }, [baseTime, sliderOffset])
+
+  // Get all tide data for the full range
+  const allTideData = useMemo(() => {
+    const startDate = new Date(baseTime.getTime() - 24 * 60 * 60 * 1000) // 1 day before
+    return calculateTides(startDate, 10) // 10 days of data
+  }, [baseTime])
+
+  // Get tides in visible window
+  const visibleTides = useMemo(() => {
+    const windowEnd = new Date(windowStartTime.getTime() + VISIBLE_HOURS * 60 * 60 * 1000)
+    return allTideData.filter(t => t.time >= windowStartTime && t.time <= windowEnd)
+  }, [allTideData, windowStartTime])
+
+  const lowTides = visibleTides.filter(t => t.type === 'low')
+  const highTides = visibleTides.filter(t => t.type === 'high')
 
   // Get water level at any time using cosine interpolation
   const getWaterLevelAtTime = (time: Date): number => {
-    const allTides = calculateTides(new Date(selectedDate.getTime() - 24 * 60 * 60 * 1000), 3)
-    if (allTides.length < 2) return 1.0
-    let prevTide = allTides[0], nextTide = allTides[1]
-    for (let i = 0; i < allTides.length - 1; i++) {
-      if (allTides[i].time <= time && allTides[i + 1].time > time) {
-        prevTide = allTides[i]; nextTide = allTides[i + 1]; break
+    if (allTideData.length < 2) return 1.0
+    let prevTide = allTideData[0], nextTide = allTideData[1]
+    for (let i = 0; i < allTideData.length - 1; i++) {
+      if (allTideData[i].time <= time && allTideData[i + 1].time > time) {
+        prevTide = allTideData[i]; nextTide = allTideData[i + 1]; break
       }
     }
     const totalDuration = nextTide.time.getTime() - prevTide.time.getTime()
@@ -897,62 +911,78 @@ function TideModal({ onClose }: { onClose: () => void }) {
     return prevTide.height + (nextTide.height - prevTide.height) * cosineProgress
   }
 
-  // Generate curve points for 24h (00:00 to 24:00)
+  // Generate curve points for visible window
   const curvePoints = useMemo(() => {
     const points: { hour: number; height: number }[] = []
-    const dayStart = new Date(selectedDate)
-    dayStart.setHours(0, 0, 0, 0)
-    for (let h = 0; h <= 24; h += 0.25) {
-      const time = new Date(dayStart.getTime() + h * 60 * 60 * 1000)
+    for (let h = 0; h <= VISIBLE_HOURS; h += 0.25) {
+      const time = new Date(windowStartTime.getTime() + h * 60 * 60 * 1000)
       points.push({ hour: h, height: getWaterLevelAtTime(time) })
     }
     return points
-  }, [selectedDate])
+  }, [windowStartTime, allTideData])
 
   const now = new Date()
-  const isToday = selectedDate.toDateString() === now.toDateString()
-  const currentHour = now.getHours() + now.getMinutes() / 60
-  const currentLevel = isToday ? getWaterLevelAtTime(now) : null
+  // Check if "now" is in the visible window
+  const nowInWindow = now >= windowStartTime && now <= new Date(windowStartTime.getTime() + VISIBLE_HOURS * 60 * 60 * 1000)
+  const currentHourInWindow = nowInWindow ? (now.getTime() - windowStartTime.getTime()) / (60 * 60 * 1000) : -1
+  const currentLevel = nowInWindow ? getWaterLevelAtTime(now) : null
 
   // Find next tide from current time
-  const nextTide = tideData.find(t => t.time > now)
+  const nextTide = allTideData.find(t => t.time > now)
 
   // Determine if tide is rising or falling
   const getTrend = (): 'rising' | 'falling' => {
-    if (!isToday) return 'stable' as any
     const levelNow = getWaterLevelAtTime(now)
     const level10MinAgo = getWaterLevelAtTime(new Date(now.getTime() - 10 * 60 * 1000))
     return levelNow > level10MinAgo ? 'rising' : 'falling'
   }
 
-  // Moon phase for the selected date
-  const moonPhase = getMoonPhase(selectedDate)
-  const moonPhaseName = getMoonPhaseName(moonPhase)
+  // Moon phase for the visible window center
+  const centerTime = new Date(windowStartTime.getTime() + (VISIBLE_HOURS / 2) * 60 * 60 * 1000)
+  const moonPhase = getMoonPhase(centerTime)
   const illumination = Math.round((moonPhase <= 0.5 ? moonPhase * 2 : (1 - moonPhase) * 2) * 100)
   const isWaning = moonPhase > 0.5
 
-  // Sunrise/sunset for daytime band
-  const sunTimes = getSunTimes(selectedDate, selectedStation.lat)
+  // Sunrise/sunset for daytime band (use first day in window)
+  const sunTimes = getSunTimes(windowStartTime, selectedStation.lat)
 
-  // Height scale (0 to 2.4m like screenshot)
+  // Height scale (0 to 2.4m)
   const heightLabels = [2.4, 2, 1.6, 1.2, 0.8, 0.4, 0]
   const maxHeight = 2.4
 
   const formatTime = (date: Date) => date.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })
-  const formatDateLabel = () => {
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    const sel = new Date(selectedDate)
-    sel.setHours(0, 0, 0, 0)
-    const diff = Math.floor((sel.getTime() - today.getTime()) / (24 * 60 * 60 * 1000))
-    if (diff === 0) return '(Today)'
-    if (diff === 1) return '(Morgen)'
-    if (diff === -1) return '(Gisteren)'
-    return ''
+
+  // Format window date range for display
+  const formatWindowRange = () => {
+    const endTime = new Date(windowStartTime.getTime() + VISIBLE_HOURS * 60 * 60 * 1000)
+    const startStr = windowStartTime.toLocaleDateString('nl-NL', { weekday: 'short', day: 'numeric', month: 'short' })
+    const endStr = endTime.toLocaleDateString('nl-NL', { weekday: 'short', day: 'numeric', month: 'short' })
+    if (startStr === endStr) return startStr
+    return `${startStr} - ${endStr}`
+  }
+
+  // Get time labels for x-axis
+  const getTimeLabels = () => {
+    const labels: { hour: number; label: string; isNewDay: boolean }[] = []
+    for (let h = 0; h <= VISIBLE_HOURS; h += 3) {
+      const time = new Date(windowStartTime.getTime() + h * 60 * 60 * 1000)
+      const hourStr = time.getHours().toString().padStart(2, '0')
+      const isNewDay = time.getHours() === 0 && h > 0
+      labels.push({ hour: h, label: hourStr, isNewDay })
+    }
+    return labels
   }
 
   // Cloud percentage from weather
   const cloudPercent = current?.weatherCode ? (current.weatherCode >= 3 ? 75 : current.weatherCode >= 2 ? 50 : current.weatherCode >= 1 ? 25 : 0) : 0
+
+  // Calculate slider day label
+  const getSliderDayLabel = (offset: number) => {
+    const days = Math.floor(offset / 24)
+    if (days === 0) return 'Nu'
+    if (days === 1) return '+1 dag'
+    return `+${days} dagen`
+  }
 
   return (
     <motion.div
@@ -991,24 +1021,18 @@ function TideModal({ onClose }: { onClose: () => void }) {
           </div>
         </div>
 
-        {/* Info bar: moon, date, weather */}
+        {/* Info bar: moon, date range, weather */}
         <div className="bg-[#3b82f6] px-4 pb-4 flex items-center justify-between">
           {/* Moon phase */}
           <div className="flex flex-col items-center">
             <MoonPhase phase={moonPhase} size={40} />
-            <span className="text-white/90 text-[10px] mt-1">{illumination}% {isWaning ? 'Waning' : 'Waxing'}</span>
+            <span className="text-white/90 text-[10px] mt-1">{illumination}% {isWaning ? 'Afnemend' : 'Wassend'}</span>
           </div>
 
-          {/* Date with picker */}
+          {/* Date range display */}
           <div className="text-center">
-            <input
-              type="date"
-              value={selectedDate.toISOString().split('T')[0]}
-              onChange={(e) => setSelectedDate(new Date(e.target.value))}
-              className="bg-transparent text-white text-lg font-semibold border-0 outline-none text-center cursor-pointer"
-              style={{ colorScheme: 'dark' }}
-            />
-            <div className="text-white/80 text-sm">{formatDateLabel()}</div>
+            <div className="text-white text-lg font-semibold">{formatWindowRange()}</div>
+            <div className="text-white/80 text-sm">{getSliderDayLabel(sliderOffset)}</div>
           </div>
 
           {/* Weather */}
@@ -1019,73 +1043,115 @@ function TideModal({ onClose }: { onClose: () => void }) {
         </div>
 
         {/* Graph area */}
-        <div className="relative bg-white" style={{ height: 280 }}>
-          {/* Daytime band (yellow) */}
-          <div
-            className="absolute top-0 bottom-8 bg-[#f5f5dc]/60"
-            style={{
-              left: `${(sunTimes.sunrise / 24) * 100}%`,
-              width: `${((sunTimes.sunset - sunTimes.sunrise) / 24) * 100}%`
-            }}
-          />
+        <div className="relative bg-white" style={{ height: 260 }}>
+          {/* Daytime bands - calculate for each day in window */}
+          {(() => {
+            const bands: JSX.Element[] = []
+            for (let dayOffset = 0; dayOffset < 2; dayOffset++) {
+              const dayStart = new Date(windowStartTime)
+              dayStart.setHours(0, 0, 0, 0)
+              dayStart.setDate(dayStart.getDate() + dayOffset)
+              const sun = getSunTimes(dayStart, selectedStation.lat)
+
+              // Calculate band position relative to window
+              const dayStartHour = (dayStart.getTime() - windowStartTime.getTime()) / (60 * 60 * 1000)
+              const sunriseHour = dayStartHour + sun.sunrise
+              const sunsetHour = dayStartHour + sun.sunset
+
+              if (sunsetHour > 0 && sunriseHour < VISIBLE_HOURS) {
+                const left = Math.max(0, sunriseHour / VISIBLE_HOURS * 100)
+                const right = Math.min(100, sunsetHour / VISIBLE_HOURS * 100)
+                bands.push(
+                  <div
+                    key={dayOffset}
+                    className="absolute top-0 bottom-8 bg-[#f5f5dc]/60"
+                    style={{ left: `calc(40px + ${left}% * (100% - 40px) / 100)`, width: `${(right - left)}%` }}
+                  />
+                )
+              }
+            }
+            return bands
+          })()}
 
           {/* Horizontal grid lines and height labels */}
           {heightLabels.map((h, i) => (
-            <div key={h} className="absolute left-0 right-0 flex items-center" style={{ top: `${(i / (heightLabels.length - 1)) * (280 - 32)}px` }}>
+            <div key={h} className="absolute left-0 right-0 flex items-center" style={{ top: `${(i / (heightLabels.length - 1)) * (260 - 32)}px` }}>
               <span className="text-gray-500 text-xs w-10 text-right pr-2">{h} m</span>
               <div className="flex-1 border-t border-gray-200" />
             </div>
           ))}
 
           {/* SVG for tide curve */}
-          <svg className="absolute left-10 right-0 top-0" style={{ height: 248 }} viewBox="0 0 100 100" preserveAspectRatio="none">
+          <svg className="absolute left-10 right-0 top-0" style={{ height: 228 }} viewBox="0 0 100 100" preserveAspectRatio="none">
+            {/* Day separator lines */}
+            {(() => {
+              const lines: JSX.Element[] = []
+              for (let h = 0; h <= VISIBLE_HOURS; h++) {
+                const time = new Date(windowStartTime.getTime() + h * 60 * 60 * 1000)
+                if (time.getHours() === 0 && h > 0 && h < VISIBLE_HOURS) {
+                  lines.push(
+                    <line
+                      key={h}
+                      x1={(h / VISIBLE_HOURS) * 100}
+                      y1="0"
+                      x2={(h / VISIBLE_HOURS) * 100}
+                      y2="100"
+                      stroke="#94a3b8"
+                      strokeWidth="0.3"
+                      strokeDasharray="2,2"
+                    />
+                  )
+                }
+              }
+              return lines
+            })()}
+
             {/* Tide curve - thin dark blue line */}
             <path
-              d={`M ${curvePoints.map(p => `${(p.hour / 24) * 100} ${100 - (p.height / maxHeight) * 100}`).join(' L ')}`}
+              d={`M ${curvePoints.map(p => `${(p.hour / VISIBLE_HOURS) * 100} ${100 - (p.height / maxHeight) * 100}`).join(' L ')}`}
               fill="none"
               stroke="#1e3a5f"
               strokeWidth="0.8"
             />
 
-            {/* Current time marker (red vertical line) */}
-            {isToday && currentHour >= 0 && currentHour <= 24 && (
-              <>
-                <line
-                  x1={(currentHour / 24) * 100}
-                  y1="0"
-                  x2={(currentHour / 24) * 100}
-                  y2="100"
-                  stroke="#ef4444"
-                  strokeWidth="0.5"
+            {/* High/low tide markers */}
+            {visibleTides.map((tide, i) => {
+              const hourInWindow = (tide.time.getTime() - windowStartTime.getTime()) / (60 * 60 * 1000)
+              if (hourInWindow < 0 || hourInWindow > VISIBLE_HOURS) return null
+              return (
+                <circle
+                  key={i}
+                  cx={(hourInWindow / VISIBLE_HOURS) * 100}
+                  cy={100 - (tide.height / maxHeight) * 100}
+                  r="1.5"
+                  fill={tide.type === 'high' ? '#3b82f6' : '#1e3a5f'}
                 />
-              </>
+              )
+            })}
+
+            {/* Current time marker (red vertical line) */}
+            {nowInWindow && currentHourInWindow >= 0 && currentHourInWindow <= VISIBLE_HOURS && (
+              <line
+                x1={(currentHourInWindow / VISIBLE_HOURS) * 100}
+                y1="0"
+                x2={(currentHourInWindow / VISIBLE_HOURS) * 100}
+                y2="100"
+                stroke="#ef4444"
+                strokeWidth="0.5"
+              />
             )}
           </svg>
 
           {/* Current level label */}
-          {isToday && currentLevel !== null && (
+          {nowInWindow && currentLevel !== null && (
             <div
-              className="absolute bg-white border border-gray-300 rounded px-2 py-0.5 text-sm font-medium text-red-500 shadow-sm"
+              className="absolute bg-white border border-gray-300 rounded px-2 py-0.5 text-sm font-medium text-red-500 shadow-sm z-10"
               style={{
-                left: `calc(${10 + (currentHour / 24) * 90}% - 30px)`,
+                left: `calc(40px + ${(currentHourInWindow / VISIBLE_HOURS) * 100}% * (100% - 40px) / 100 - 30px)`,
                 top: 4
               }}
             >
               {currentLevel.toFixed(2)} m{getTrend() === 'rising' ? '↑' : '↓'}
-            </div>
-          )}
-
-          {/* Next tide tooltip */}
-          {nextTide && isToday && (
-            <div
-              className="absolute bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-lg"
-              style={{
-                right: 16,
-                top: `${100 - (nextTide.height / maxHeight) * 100}px`
-              }}
-            >
-              <div className="text-blue-600 font-semibold">{nextTide.height.toFixed(1)} m</div>
-              <div className="text-blue-500 text-sm">{formatTime(nextTide.time)}</div>
             </div>
           )}
 
@@ -1094,9 +1160,39 @@ function TideModal({ onClose }: { onClose: () => void }) {
 
           {/* Time labels at bottom */}
           <div className="absolute bottom-0 left-10 right-0 flex justify-between px-1 text-xs text-gray-500" style={{ height: 24 }}>
-            {[2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22].map(h => (
-              <span key={h} style={{ width: '8%', textAlign: 'center' }}>{h.toString().padStart(2, '0')}</span>
+            {getTimeLabels().map((t, i) => (
+              <div key={i} className="flex flex-col items-center" style={{ width: `${100 / 9}%` }}>
+                <span className={t.isNewDay ? 'text-blue-500 font-medium' : ''}>{t.label}</span>
+                {t.isNewDay && <span className="text-[8px] text-blue-400">│</span>}
+              </div>
             ))}
+          </div>
+        </div>
+
+        {/* Time slider */}
+        <div className="bg-gray-100 px-4 py-3">
+          <div className="flex items-center gap-2 mb-2">
+            <Waves size={14} className="text-blue-500" />
+            <span className="text-xs text-gray-600 font-medium">Tijdlijn (7 dagen)</span>
+            <button
+              onClick={() => setSliderOffset(0)}
+              className="ml-auto text-xs text-blue-500 hover:text-blue-700 border-0 bg-transparent cursor-pointer"
+            >
+              Nu
+            </button>
+          </div>
+          <input
+            type="range"
+            min="0"
+            max={TOTAL_HOURS - VISIBLE_HOURS}
+            value={sliderOffset}
+            onChange={(e) => setSliderOffset(parseInt(e.target.value))}
+            className="w-full h-2 bg-gray-300 rounded-lg appearance-none cursor-pointer accent-blue-500"
+          />
+          <div className="flex justify-between text-[9px] text-gray-400 mt-1">
+            <span>Nu</span>
+            <span>+3 dagen</span>
+            <span>+7 dagen</span>
           </div>
         </div>
 
@@ -1104,10 +1200,10 @@ function TideModal({ onClose }: { onClose: () => void }) {
         <div className="bg-[#1e3a5f] px-4 py-3 flex">
           {/* Low tides */}
           <div className="flex-1">
-            <div className="text-white font-semibold text-sm mb-1">Low Tides:</div>
-            {lowTides.length > 0 ? lowTides.map((t, i) => (
-              <div key={i} className="text-white/90 text-sm">
-                {t.height.toFixed(1)} m @ {formatTime(t.time)}
+            <div className="text-white font-semibold text-sm mb-1">Laagwater:</div>
+            {lowTides.length > 0 ? lowTides.slice(0, 3).map((t, i) => (
+              <div key={i} className="text-white/90 text-xs">
+                {t.height.toFixed(1)}m @ {formatTime(t.time)} {t.time.getDate() !== windowStartTime.getDate() && <span className="text-white/60">({t.time.toLocaleDateString('nl-NL', { weekday: 'short' })})</span>}
               </div>
             )) : (
               <div className="text-white/60 text-sm">-</div>
@@ -1115,10 +1211,10 @@ function TideModal({ onClose }: { onClose: () => void }) {
           </div>
           {/* High tides */}
           <div className="flex-1 text-right">
-            <div className="text-white font-semibold text-sm mb-1">High Tides:</div>
-            {highTides.length > 0 ? highTides.map((t, i) => (
-              <div key={i} className="text-white/90 text-sm">
-                {t.height.toFixed(1)} m @ {formatTime(t.time)}
+            <div className="text-white font-semibold text-sm mb-1">Hoogwater:</div>
+            {highTides.length > 0 ? highTides.slice(0, 3).map((t, i) => (
+              <div key={i} className="text-white/90 text-xs">
+                {t.height.toFixed(1)}m @ {formatTime(t.time)} {t.time.getDate() !== windowStartTime.getDate() && <span className="text-white/60">({t.time.toLocaleDateString('nl-NL', { weekday: 'short' })})</span>}
               </div>
             )) : (
               <div className="text-white/60 text-sm">-</div>
@@ -1126,25 +1222,31 @@ function TideModal({ onClose }: { onClose: () => void }) {
           </div>
         </div>
 
-        {/* Quick date buttons */}
+        {/* Quick navigation buttons */}
         <div className="bg-[#1e3a5f] px-4 pb-3 flex gap-2">
           <button
-            onClick={() => { const d = new Date(); d.setDate(d.getDate() - 1); setSelectedDate(d) }}
-            className="flex-1 py-1.5 text-xs bg-white/10 hover:bg-white/20 text-white rounded transition-colors border-0"
+            onClick={() => setSliderOffset(0)}
+            className={`flex-1 py-1.5 text-xs ${sliderOffset === 0 ? 'bg-white/30' : 'bg-white/10 hover:bg-white/20'} text-white rounded transition-colors border-0`}
           >
-            Gisteren
+            Nu
           </button>
           <button
-            onClick={() => setSelectedDate(new Date())}
-            className="flex-1 py-1.5 text-xs bg-white/20 hover:bg-white/30 text-white rounded transition-colors border-0 font-medium"
+            onClick={() => setSliderOffset(24)}
+            className={`flex-1 py-1.5 text-xs ${sliderOffset === 24 ? 'bg-white/30' : 'bg-white/10 hover:bg-white/20'} text-white rounded transition-colors border-0`}
           >
-            Vandaag
+            +1 dag
           </button>
           <button
-            onClick={() => { const d = new Date(); d.setDate(d.getDate() + 1); setSelectedDate(d) }}
-            className="flex-1 py-1.5 text-xs bg-white/10 hover:bg-white/20 text-white rounded transition-colors border-0"
+            onClick={() => setSliderOffset(48)}
+            className={`flex-1 py-1.5 text-xs ${sliderOffset === 48 ? 'bg-white/30' : 'bg-white/10 hover:bg-white/20'} text-white rounded transition-colors border-0`}
           >
-            Morgen
+            +2 dagen
+          </button>
+          <button
+            onClick={() => setSliderOffset(72)}
+            className={`flex-1 py-1.5 text-xs ${sliderOffset === 72 ? 'bg-white/30' : 'bg-white/10 hover:bg-white/20'} text-white rounded transition-colors border-0`}
+          >
+            +3 dagen
           </button>
         </div>
       </motion.div>
@@ -1340,6 +1442,293 @@ function PressureModal({ pressureHistory, currentPressure, trend, onClose }: {
             <div className="flex items-center gap-1">
               <div className="w-8 h-3 rounded-sm bg-green-500 opacity-20" />
               <span>Optimale zone</span>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
+  )
+}
+
+// Fish Score Modal - Detailed breakdown of fishing conditions
+function FishScoreModal({
+  current,
+  pressureHistory,
+  pressureTrend,
+  moonActivity,
+  combinedScore,
+  onClose
+}: {
+  current: { temperature: number; windSpeed: number; windDirection: number; pressure: number; weatherCode: number };
+  pressureHistory: { time: string; pressure: number }[];
+  pressureTrend: 'rising' | 'falling' | 'stable';
+  moonActivity: { activity: number; besteTijden: number[]; slechteTijden: number[] };
+  combinedScore: number;
+  onClose: () => void;
+}) {
+  // Get moon phase name for display
+  const moonPhase = getMoonPhase(new Date())
+  const moonPhaseName = getMoonPhaseName(moonPhase)
+  const tideType = getTideType(moonPhase)
+  // Calculate individual factor scores
+  const getWindScore = () => {
+    if (current.windSpeed < 15) return { score: 2, label: 'Uitstekend', color: 'text-green-500', desc: 'Lichte wind, ideaal' }
+    if (current.windSpeed < 25) return { score: 1, label: 'Goed', color: 'text-lime-500', desc: 'Matige wind' }
+    return { score: -1, label: 'Slecht', color: 'text-red-500', desc: 'Te veel wind' }
+  }
+
+  const getPressureScore = () => {
+    let score = 0
+    let details: string[] = []
+
+    if (current.pressure > 1020) {
+      score = 2
+      details.push('Hoge druk')
+    } else if (current.pressure > 1013) {
+      score = 1
+      details.push('Normale druk')
+    } else {
+      score = 0
+      details.push('Lage druk')
+    }
+
+    if (pressureTrend === 'rising') {
+      score += 1
+      details.push('stijgend')
+    } else if (pressureTrend === 'falling') {
+      score -= 1
+      details.push('dalend')
+    } else {
+      details.push('stabiel')
+    }
+
+    const label = score >= 2 ? 'Uitstekend' : score >= 1 ? 'Goed' : score >= 0 ? 'Matig' : 'Slecht'
+    const color = score >= 2 ? 'text-green-500' : score >= 1 ? 'text-lime-500' : score >= 0 ? 'text-amber-500' : 'text-red-500'
+
+    return { score: Math.max(0, score), label, color, desc: details.join(', ') }
+  }
+
+  const getTempScore = () => {
+    if (current.temperature >= 10 && current.temperature <= 20)
+      return { score: 2, label: 'Ideaal', color: 'text-green-500', desc: '10-20°C is perfect' }
+    if (current.temperature >= 5 && current.temperature <= 25)
+      return { score: 1, label: 'Goed', color: 'text-lime-500', desc: 'Acceptabel bereik' }
+    return { score: 0, label: 'Matig', color: 'text-amber-500', desc: 'Buiten ideaal bereik' }
+  }
+
+  const getWeatherScore = () => {
+    if (current.weatherCode < 50)
+      return { score: 1, label: 'Droog', color: 'text-green-500', desc: 'Geen neerslag' }
+    return { score: 0, label: 'Nat', color: 'text-amber-500', desc: 'Neerslag verwacht' }
+  }
+
+  const getMoonScore = () => {
+    const activity = moonActivity.activity
+    if (activity >= 0.7) return { score: 3, label: 'Zeer actief', color: 'text-green-500' }
+    if (activity >= 0.5) return { score: 2, label: 'Actief', color: 'text-lime-500' }
+    if (activity >= 0.3) return { score: 1, label: 'Matig', color: 'text-amber-500' }
+    return { score: 0, label: 'Rustig', color: 'text-red-400' }
+  }
+
+  const windScore = getWindScore()
+  const pressureScore = getPressureScore()
+  const tempScore = getTempScore()
+  const weatherScore = getWeatherScore()
+  const moonScore = getMoonScore()
+
+  // Pressure data for chart
+  const data48h = pressureHistory.slice(-72)
+
+  const getScoreColor = (s: number) => {
+    if (s >= 2.5) return 'text-green-500'
+    if (s >= 1.5) return 'text-lime-500'
+    if (s >= 0.8) return 'text-amber-500'
+    return 'text-red-500'
+  }
+
+  const getScoreBg = (s: number) => {
+    if (s >= 2.5) return 'from-green-500 to-emerald-600'
+    if (s >= 1.5) return 'from-lime-500 to-green-600'
+    if (s >= 0.8) return 'from-amber-500 to-orange-600'
+    return 'from-red-500 to-rose-600'
+  }
+
+  return (
+    <motion.div
+      className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/50 p-4"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      onClick={onClose}
+    >
+      <motion.div
+        className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl w-full max-w-sm max-h-[90vh] overflow-y-auto select-none"
+        initial={{ scale: 0.9, opacity: 0, y: 20 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.9, opacity: 0, y: 20 }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="p-4 space-y-4">
+          {/* Header with score */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${getScoreBg(combinedScore)} flex items-center justify-center shadow-lg`}>
+                <FishIcon size={28} className="text-white" />
+              </div>
+              <div>
+                <div className="text-lg font-bold text-gray-800">Visscore</div>
+                <div className={`text-sm font-medium ${getScoreColor(combinedScore)}`}>
+                  {combinedScore >= 2.5 ? 'Uitstekend' : combinedScore >= 1.5 ? 'Goed' : combinedScore >= 0.8 ? 'Matig' : 'Slecht'}
+                </div>
+              </div>
+            </div>
+            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors border-0 outline-none bg-transparent">
+              <X size={16} className="text-gray-500" />
+            </button>
+          </div>
+
+          {/* Score breakdown */}
+          <div className="bg-gray-50 rounded-xl p-3 space-y-3">
+            <div className="text-xs font-medium text-gray-600 mb-2">Score opbouw</div>
+
+            {/* Pressure - most important */}
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center">
+                <Gauge size={16} className="text-purple-500" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-700">Luchtdruk</span>
+                  <span className={`text-sm font-medium ${pressureScore.color}`}>{pressureScore.label}</span>
+                </div>
+                <div className="text-[10px] text-gray-500">{Math.round(current.pressure)} hPa, {pressureScore.desc}</div>
+              </div>
+            </div>
+
+            {/* Moon */}
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center">
+                <Moon size={16} className="text-indigo-500" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-700">Maanfase</span>
+                  <span className={`text-sm font-medium ${moonScore.color}`}>{moonScore.label}</span>
+                </div>
+                <div className="text-[10px] text-gray-500">{moonPhaseName} ({tideType.type}), {Math.round(moonActivity.activity * 100)}% activiteit</div>
+              </div>
+            </div>
+
+            {/* Wind */}
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
+                <Wind size={16} className="text-blue-500" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-700">Wind</span>
+                  <span className={`text-sm font-medium ${windScore.color}`}>{windScore.label}</span>
+                </div>
+                <div className="text-[10px] text-gray-500">{Math.round(current.windSpeed)} km/u, {windScore.desc}</div>
+              </div>
+            </div>
+
+            {/* Temperature */}
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center">
+                <Thermometer size={16} className="text-orange-500" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-700">Temperatuur</span>
+                  <span className={`text-sm font-medium ${tempScore.color}`}>{tempScore.label}</span>
+                </div>
+                <div className="text-[10px] text-gray-500">{Math.round(current.temperature)}°C, {tempScore.desc}</div>
+              </div>
+            </div>
+
+            {/* Weather */}
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-cyan-100 flex items-center justify-center">
+                <Cloud size={16} className="text-cyan-500" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-700">Weer</span>
+                  <span className={`text-sm font-medium ${weatherScore.color}`}>{weatherScore.label}</span>
+                </div>
+                <div className="text-[10px] text-gray-500">{weatherScore.desc}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Pressure trend chart */}
+          {data48h.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Gauge size={14} className="text-purple-500" />
+                <span className="text-xs font-medium text-gray-600">Luchtdruk verloop (48u)</span>
+                <div className="ml-auto flex items-center gap-1">
+                  {pressureTrend === 'rising' && <TrendingUp size={12} className="text-green-500" />}
+                  {pressureTrend === 'falling' && <TrendingDown size={12} className="text-red-500" />}
+                  {pressureTrend === 'stable' && <Minus size={12} className="text-gray-400" />}
+                  <span className="text-[10px] text-gray-500">
+                    {pressureTrend === 'rising' ? 'Stijgend' : pressureTrend === 'falling' ? 'Dalend' : 'Stabiel'}
+                  </span>
+                </div>
+              </div>
+              <div className="relative bg-gray-100 rounded-xl p-2 h-24">
+                <svg className="absolute inset-2 w-[calc(100%-16px)] h-[calc(100%-16px)]" viewBox="0 0 100 100" preserveAspectRatio="none">
+                  {/* Optimal zone */}
+                  <rect x="0" y="20" width="100" height="40" fill="#22c55e" opacity="0.1" />
+                  {/* Pressure line */}
+                  {data48h.length > 1 && (
+                    <path
+                      d={`M ${data48h.slice(-48).map((d, i) => {
+                        const x = (i / 47) * 100
+                        const minP = Math.min(...data48h.slice(-48).map(p => p.pressure)) - 5
+                        const maxP = Math.max(...data48h.slice(-48).map(p => p.pressure)) + 5
+                        const y = 100 - ((d.pressure - minP) / (maxP - minP)) * 100
+                        return `${x} ${y}`
+                      }).join(' L ')}`}
+                      fill="none"
+                      stroke="#8b5cf6"
+                      strokeWidth="2"
+                    />
+                  )}
+                  {/* Now marker */}
+                  <line x1="100" y1="0" x2="100" y2="100" stroke="#f59e0b" strokeWidth="1" strokeDasharray="2,2" />
+                </svg>
+                <div className="absolute bottom-0.5 left-2 right-2 flex justify-between text-[8px] text-gray-400">
+                  <span>-48u</span>
+                  <span>-24u</span>
+                  <span>Nu</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Explanation */}
+          <div className="bg-blue-50 rounded-xl p-3 space-y-2">
+            <div className="flex items-center gap-2">
+              <BarChart3 size={14} className="text-blue-500" />
+              <span className="text-xs font-medium text-blue-700">Hoe werkt de visscore?</span>
+            </div>
+            <div className="text-[11px] text-blue-800 space-y-1.5">
+              <p><strong>Luchtdruk</strong> is de belangrijkste factor. Vissen hebben een zwemblaas die gevoelig is voor drukveranderingen. <span className="text-green-600">Stijgende druk</span> = actievere vissen. <span className="text-red-500">Dalende druk</span> = minder activiteit.</p>
+              <p><strong>Maanfase</strong> beïnvloedt getijden en visgedrag. Rond <span className="text-green-600">nieuwe en volle maan</span> zijn vissen actiever door sterkere getijstromen.</p>
+              <p><strong>Wind</strong> onder 15 km/u is ideaal. Lichte wind zorgt voor zuurstofrijk water zonder het water te troebel te maken.</p>
+              <p><strong>Temperatuur</strong> tussen 10-20°C is optimaal voor de meeste vissoorten in Nederland.</p>
+            </div>
+          </div>
+
+          {/* Pro tip */}
+          <div className="bg-amber-50 rounded-xl p-3">
+            <div className="flex items-start gap-2">
+              <FishIcon size={16} className="text-amber-500 mt-0.5" />
+              <div className="text-[11px] text-amber-800">
+                <strong>Pro tip:</strong> De beste vistijden zijn vaak 1-2 uur voor en na een drukomslag, en rond zonsopgang/zonsondergang tijdens een stijgende luchtdruk.
+              </div>
             </div>
           </div>
         </div>
@@ -1568,6 +1957,7 @@ export function FishingWidget() {
   const [moonDaysOffset, setMoonDaysOffset] = useState(0)
   const [showPressureModal, setShowPressureModal] = useState(false)
   const [showRadarModal, setShowRadarModal] = useState(false)
+  const [showFishScoreModal, setShowFishScoreModal] = useState(false)
   const [riverFlows, setRiverFlows] = useState<Map<string, number>>(new Map())
 
   // Fetch river flow data
@@ -1656,7 +2046,7 @@ export function FishingWidget() {
       <motion.div
         className="fixed left-2 z-[1500] bg-white shadow-lg border border-gray-200 select-none rounded-xl"
         style={isExpanded
-          ? { top: '0.5rem', bottom: '0.5rem', width: '220px', overflowY: 'auto' }
+          ? { top: '0.5rem', width: '220px', maxHeight: 'calc(100vh - 1rem)', overflowY: 'auto' }
           : { top: 'max(0.5rem, env(safe-area-inset-top, 0.5rem))' }
         }
         initial={{ opacity: 0, x: -20 }}
@@ -1702,24 +2092,32 @@ export function FishingWidget() {
                 </div>
               </div>
 
-              {/* Fish score bar */}
-              <div className="flex items-center gap-2 mt-1.5 pt-1.5 border-t border-gray-200/50">
-                <FishScale value={combinedScore} color={getColorForScore(combinedScore)} />
-                <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full transition-all ${
-                      combinedScore >= 2.5 ? 'bg-green-500' :
-                      combinedScore >= 1.5 ? 'bg-lime-500' :
-                      combinedScore >= 0.8 ? 'bg-amber-500' : 'bg-red-500'
-                    }`}
-                    style={{ width: `${Math.max((combinedScore / 3) * 100, 5)}%` }}
-                  />
-                </div>
-                <span className={`text-[10px] font-medium ${getColorForScore(combinedScore)}`}>
-                  {getScoreLabel(combinedScore)}
-                </span>
-              </div>
             </button>
+
+            {/* Fish score bar - clickable for details */}
+            <div
+              className="flex items-center gap-2 mt-1.5 pt-1.5 border-t border-gray-200/50 cursor-pointer hover:bg-gray-50 rounded-lg p-1 -m-1 transition-colors"
+              onClick={(e) => {
+                e.stopPropagation()
+                setShowFishScoreModal(true)
+              }}
+            >
+              <FishScale value={combinedScore} color={getColorForScore(combinedScore)} />
+              <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                <div
+                  className={`h-full transition-all ${
+                    combinedScore >= 2.5 ? 'bg-green-500' :
+                    combinedScore >= 1.5 ? 'bg-lime-500' :
+                    combinedScore >= 0.8 ? 'bg-amber-500' : 'bg-red-500'
+                  }`}
+                  style={{ width: `${Math.max((combinedScore / 3) * 100, 5)}%` }}
+                />
+              </div>
+              <span className={`text-[10px] font-medium ${getColorForScore(combinedScore)}`}>
+                {getScoreLabel(combinedScore)}
+              </span>
+              <ChevronRight size={12} className="text-gray-400" />
+            </div>
 
             {/* Expanded view */}
             <AnimatePresence>
@@ -2055,6 +2453,19 @@ export function FishingWidget() {
       <AnimatePresence>
         {showRadarModal && (
           <RainRadarModal onClose={() => setShowRadarModal(false)} />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showFishScoreModal && current && (
+          <FishScoreModal
+            current={current}
+            pressureHistory={pressureHistory}
+            pressureTrend={getPressureTrend()}
+            moonActivity={moonActivity}
+            combinedScore={combinedScore}
+            onClose={() => setShowFishScoreModal(false)}
+          />
         )}
       </AnimatePresence>
     </motion.div>

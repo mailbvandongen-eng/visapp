@@ -1,5 +1,6 @@
-import { motion } from 'framer-motion'
-import { X, Fish, MapPin, Map, Type } from 'lucide-react'
+import { useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { X, Fish, MapPin, Map, Type, ChevronDown, Thermometer, Wind, Waves, CloudRain, Droplets, BarChart3 } from 'lucide-react'
 import { useUIStore, useSettingsStore, useLayerStore } from '../../store'
 
 export function SettingsPanel() {
@@ -20,8 +21,24 @@ export function SettingsPanel() {
   const setShowFontSliders = useSettingsStore(state => state.setShowFontSliders)
   const setLayerVisibility = useLayerStore(state => state.setLayerVisibility)
 
-  // Calculate font size based on fontScale setting
-  const baseFontSize = 14 * fontScale / 100
+  // Widget settings
+  const showWeatherWidget = useSettingsStore(state => state.showWeatherWidget)
+  const setShowWeatherWidget = useSettingsStore(state => state.setShowWeatherWidget)
+  const showWindIndicator = useSettingsStore(state => state.showWindIndicator)
+  const setShowWindIndicator = useSettingsStore(state => state.setShowWindIndicator)
+  const showTideWidget = useSettingsStore(state => state.showTideWidget)
+  const setShowTideWidget = useSettingsStore(state => state.setShowTideWidget)
+  const showBuienradarWidget = useSettingsStore(state => state.showBuienradarWidget)
+  const setShowBuienradarWidget = useSettingsStore(state => state.setShowBuienradarWidget)
+  const showWaterflowWidget = useSettingsStore(state => state.showWaterflowWidget)
+  const setShowWaterflowWidget = useSettingsStore(state => state.setShowWaterflowWidget)
+  const showForecastSlider = useSettingsStore(state => state.showForecastSlider)
+  const setShowForecastSlider = useSettingsStore(state => state.setShowForecastSlider)
+  const showWaterDataWidget = useSettingsStore(state => state.showWaterDataWidget)
+  const setShowWaterDataWidget = useSettingsStore(state => state.setShowWaterDataWidget)
+
+  // State for collapsible widgets section
+  const [widgetsExpanded, setWidgetsExpanded] = useState(false)
 
   // Handle background change - also apply to layer visibility
   const handleBackgroundChange = (value: 'OpenStreetMap' | 'Luchtfoto' | 'Terrein') => {
@@ -147,10 +164,74 @@ export function SettingsPanel() {
                 <span className="text-xs text-gray-500 w-10">{fontScale}%</span>
               </div>
             )}
+          </div>
 
-            <p className="text-xs text-gray-400 pl-2">
-              Widgets via lang drukken op kaart → Widgets
-            </p>
+          {/* Widgets sectie - uitklapbaar */}
+          <div className="space-y-3 pt-2 border-t border-gray-100">
+            <button
+              onClick={() => setWidgetsExpanded(!widgetsExpanded)}
+              className="w-full flex items-center justify-between bg-transparent border-0 p-0 cursor-pointer"
+            >
+              <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide">Widgets</h3>
+              <ChevronDown
+                size={18}
+                className={`text-gray-400 transition-transform ${widgetsExpanded ? 'rotate-180' : ''}`}
+              />
+            </button>
+
+            <AnimatePresence>
+              {widgetsExpanded && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="overflow-hidden space-y-2"
+                >
+                  <WidgetToggleItem
+                    icon={<Thermometer size={16} className="text-orange-500" />}
+                    label="Weer & visvriendelijkheid"
+                    checked={showWeatherWidget}
+                    onChange={setShowWeatherWidget}
+                  />
+                  <WidgetToggleItem
+                    icon={<Wind size={16} className="text-cyan-500" />}
+                    label="Wind indicator"
+                    checked={showWindIndicator}
+                    onChange={setShowWindIndicator}
+                  />
+                  <WidgetToggleItem
+                    icon={<Waves size={16} className="text-blue-500" />}
+                    label="Getijden"
+                    checked={showTideWidget}
+                    onChange={setShowTideWidget}
+                  />
+                  <WidgetToggleItem
+                    icon={<CloudRain size={16} className="text-indigo-500" />}
+                    label="Buienradar"
+                    checked={showBuienradarWidget}
+                    onChange={setShowBuienradarWidget}
+                  />
+                  <WidgetToggleItem
+                    icon={<Droplets size={16} className="text-cyan-600" />}
+                    label="Waterdata (temp, golven)"
+                    checked={showWaterDataWidget}
+                    onChange={setShowWaterDataWidget}
+                  />
+                  <WidgetToggleItem
+                    icon={<BarChart3 size={16} className="text-green-500" />}
+                    label="Waterafvoer rivieren"
+                    checked={showWaterflowWidget}
+                    onChange={setShowWaterflowWidget}
+                  />
+                  <WidgetToggleItem
+                    icon={<BarChart3 size={16} className="text-purple-500" />}
+                    label="Voorspelling schuif"
+                    checked={showForecastSlider}
+                    onChange={setShowForecastSlider}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
 
@@ -190,6 +271,35 @@ function ToggleItem({ icon, label, description, checked, onChange }: ToggleItemP
         <span
           className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${
             checked ? 'left-6' : 'left-1'
+          }`}
+        />
+      </button>
+    </div>
+  )
+}
+
+// Compact widget toggle for the expandable section
+function WidgetToggleItem({ icon, label, checked, onChange }: {
+  icon: React.ReactNode
+  label: string
+  checked: boolean
+  onChange: (value: boolean) => void
+}) {
+  return (
+    <div className="flex items-center gap-2 py-1.5 px-1">
+      <div className="p-1.5 bg-gray-100 rounded-lg">
+        {icon}
+      </div>
+      <span className="flex-1 text-sm text-gray-700">{label}</span>
+      <button
+        onClick={() => onChange(!checked)}
+        className={`relative w-10 h-5 rounded-full transition-colors border-0 outline-none ${
+          checked ? 'bg-orange-500' : 'bg-gray-300'
+        }`}
+      >
+        <span
+          className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all ${
+            checked ? 'left-5' : 'left-0.5'
           }`}
         />
       </button>
