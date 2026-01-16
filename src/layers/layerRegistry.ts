@@ -55,6 +55,14 @@ export const layerRegistry: Record<string, LayerDefinition> = {
       return createPDOKWaterLayer()
     },
     immediateLoad: true
+  },
+  'Zeevisstekken': {
+    name: 'Zeevisstekken',
+    factory: async () => {
+      const { createZeevisstekkenLayer } = await import('./zeevisstekkenOL')
+      return createZeevisstekkenLayer()
+    },
+    immediateLoad: false
   }
 }
 

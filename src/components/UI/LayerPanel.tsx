@@ -6,7 +6,8 @@ const VIS_LAYERS = [
   { name: 'Aanlegsteigers', icon: Anchor, color: '#2196F3' },
   { name: 'Trailerhellingen', icon: Ship, color: '#4CAF50' },
   { name: 'Dieptekaart', icon: Waves, color: '#00BCD4' },
-  { name: 'Viswater', icon: MapPin, color: '#9C27B0' }
+  { name: 'Viswater', icon: MapPin, color: '#9C27B0' },
+  { name: 'Zeevisstekken', icon: Waves, color: '#0D47A1' }
 ]
 
 const BASE_LAYERS = [

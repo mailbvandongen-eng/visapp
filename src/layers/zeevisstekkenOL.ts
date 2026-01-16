@@ -1,0 +1,587 @@
+import VectorLayer from 'ol/layer/Vector'
+import VectorSource from 'ol/source/Vector'
+import GeoJSON from 'ol/format/GeoJSON'
+import { VIS_LAYER_STYLES } from './iconStyles'
+
+// Zeevisstekken data - bekende plekken langs de Nederlandse kust
+const ZEEVISSTEKKEN_DATA = {
+  type: 'FeatureCollection',
+  features: [
+    // === EUROPOORT / MAASVLAKTE ===
+    {
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [4.0485, 51.9525] },
+      properties: {
+        layerType: 'zeevisstek',
+        name: 'Calandkanaal Zuid',
+        regio: 'Europoort',
+        beschrijving: 'Toegankelijke stek tussen 4e en 5e Petroleumhaven. Snelstromend kanaal, ideaal voor zeebaars.',
+        parkeren: 'Gratis',
+        beerkanaal: false,
+        vissoorten: {
+          zomer: ['Zeebaars', 'Harder', 'Bot'],
+          winter: ['Gul', 'Wijting', 'Steenbolk', 'Schar']
+        },
+        tips: 'Beste bij opkomend water. Kunstaas werkt goed voor zeebaars.',
+        bereikbaarheid: 'Goed bereikbaar over de weg'
+      }
+    },
+    {
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [4.0892, 51.9312] },
+      properties: {
+        layerType: 'zeevisstek',
+        name: 'Beerkanaal (Kop van de Beer)',
+        regio: 'Europoort',
+        beschrijving: 'Toplocatie voor zeebaars. Alleen toegankelijk tijdens georganiseerde wedstrijddagen (6-10x per jaar).',
+        parkeren: 'N.v.t.',
+        beerkanaal: true,
+        vissoorten: {
+          zomer: ['Zeebaars', 'Harder'],
+          winter: ['Gul', 'Wijting']
+        },
+        tips: 'Let op wedstrijdkalender. Niet individueel toegankelijk.',
+        bereikbaarheid: 'Beperkte toegang'
+      }
+    },
+    {
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [4.0156, 51.9689] },
+      properties: {
+        layerType: 'zeevisstek',
+        name: '2e Maasvlakte Strand',
+        regio: 'Maasvlakte',
+        beschrijving: 'Nieuw aangelegd strand met uitstekende mogelijkheden. Veel ruimte en diverse stekken.',
+        parkeren: 'Gratis',
+        beerkanaal: false,
+        vissoorten: {
+          zomer: ['Zeebaars', 'Tong', 'Bot', 'Harder'],
+          winter: ['Gul', 'Wijting', 'Schar', 'Steenbolk']
+        },
+        tips: 'Zeebaars vooral op zagers (natuurlijk aas). Vroege ochtend en avond beste tijden.',
+        bereikbaarheid: 'Goede parkeergelegenheid bij strandopgang'
+      }
+    },
+
+    // === HOEK VAN HOLLAND ===
+    {
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [4.1189, 51.9797] },
+      properties: {
+        layerType: 'zeevisstek',
+        name: 'Noorderpier Hoek van Holland',
+        regio: 'Hoek van Holland',
+        beschrijving: 'Lange pier met uitstekende mogelijkheden. Vis trekt de Waterweg op langs de pier.',
+        parkeren: 'Gratis (lang lopen, vouwfiets aangeraden)',
+        beerkanaal: false,
+        vissoorten: {
+          zomer: ['Zeebaars', 'Makreel', 'Harder', 'Bot'],
+          winter: ['Gul', 'Wijting', 'Schar', 'Steenbolk']
+        },
+        tips: 'Beste stekken vanaf de eerste boei. Nachtvisserij zeer productief voor gul.',
+        bereikbaarheid: 'Parkeren bij Ina\'s snackbar, dan flink stuk lopen'
+      }
+    },
+    {
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [4.1245, 51.9756] },
+      properties: {
+        layerType: 'zeevisstek',
+        name: 'Zuiderpier Hoek van Holland',
+        regio: 'Hoek van Holland',
+        beschrijving: 'Kortere pier dan de Noorderpier maar vaak minder druk.',
+        parkeren: 'Gratis',
+        beerkanaal: false,
+        vissoorten: {
+          zomer: ['Zeebaars', 'Bot', 'Tong'],
+          winter: ['Gul', 'Wijting', 'Schar']
+        },
+        tips: 'Goede optie als het druk is op de Noorderpier.',
+        bereikbaarheid: 'Korter lopen dan Noorderpier'
+      }
+    },
+    {
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [4.1312, 51.9834] },
+      properties: {
+        layerType: 'zeevisstek',
+        name: 'Strand Hoek van Holland',
+        regio: 'Hoek van Holland',
+        beschrijving: 'Strandvissen met goede kansen op platvis en zeebaars.',
+        parkeren: 'Betaald (strandparkeren)',
+        beerkanaal: false,
+        vissoorten: {
+          zomer: ['Bot', 'Tong', 'Zeebaars', 'Harder'],
+          winter: ['Gul', 'Wijting', 'Schar']
+        },
+        tips: 'Best bij wind op de kant. Vroege ochtend en late avond.',
+        bereikbaarheid: 'Goed bereikbaar'
+      }
+    },
+
+    // === SCHEVENINGEN ===
+    {
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [4.2589, 52.1156] },
+      properties: {
+        layerType: 'zeevisstek',
+        name: 'Zuidelijk Havenhoofd Scheveningen',
+        regio: 'Scheveningen',
+        beschrijving: 'Populaire stek aan de haven. Let op obstakels onderwater na baggerwerk.',
+        parkeren: 'Betaald',
+        beerkanaal: false,
+        vissoorten: {
+          zomer: ['Bot', 'Schar', 'Makreel'],
+          winter: ['Wijting', 'Gul', 'Sliptong']
+        },
+        tips: 'Havenkant levert vaak meer op dan zeekant bij harde wind. Veel onderlijnen kwijt bij de blokken.',
+        bereikbaarheid: 'Goed bereikbaar, parkeren aan Dr. Lelykade'
+      }
+    },
+    {
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [4.2534, 52.1167] },
+      properties: {
+        layerType: 'zeevisstek',
+        name: 'Noordelijk Havenhoofd Scheveningen',
+        regio: 'Scheveningen',
+        beschrijving: 'Mooie stek met uitzicht op de haven. Goede mogelijkheden op diverse vissoorten.',
+        parkeren: 'Betaald',
+        beerkanaal: false,
+        vissoorten: {
+          zomer: ['Bot', 'Schar', 'Harder'],
+          winter: ['Wijting', 'Gul']
+        },
+        tips: 'Minder druk dan het zuidelijk havenhoofd.',
+        bereikbaarheid: 'Goed bereikbaar'
+      }
+    },
+
+    // === IJMUIDEN ===
+    {
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [4.5489, 52.4656] },
+      properties: {
+        layerType: 'zeevisstek',
+        name: 'Noorderpier IJmuiden',
+        regio: 'IJmuiden',
+        beschrijving: 'Walhalla voor zeebaars! Dé toplocatie voor zeebaars in Nederland. Vis komt zeer dicht onder de kant.',
+        parkeren: 'Gratis',
+        beerkanaal: false,
+        vissoorten: {
+          zomer: ['Zeebaars', 'Makreel', 'Harder'],
+          winter: ['Gul', 'Wijting', 'Steenbolk']
+        },
+        tips: 'Zeebaarzen actiever in het donker. Beste bij golvend water. Kunstaas zeer effectief.',
+        bereikbaarheid: 'Parkeren bij Seaport Marina, Kennemerboulevard'
+      }
+    },
+    {
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [4.5578, 52.4589] },
+      properties: {
+        layerType: 'zeevisstek',
+        name: 'Zuiderpier IJmuiden',
+        regio: 'IJmuiden',
+        beschrijving: 'Goede alternatieve stek, minder druk dan de Noorderpier.',
+        parkeren: 'Betaald',
+        beerkanaal: false,
+        vissoorten: {
+          zomer: ['Zeebaars', 'Harder', 'Bot'],
+          winter: ['Gul', 'Wijting']
+        },
+        tips: 'Goede optie als Noorderpier te druk is.',
+        bereikbaarheid: 'Goed bereikbaar'
+      }
+    },
+    {
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [4.5623, 52.4534] },
+      properties: {
+        layerType: 'zeevisstek',
+        name: 'Strand IJmuiden',
+        regio: 'IJmuiden',
+        beschrijving: 'Strandvissen met goede kansen op diverse soorten.',
+        parkeren: 'Betaald (zomer), Gratis (winter)',
+        beerkanaal: false,
+        vissoorten: {
+          zomer: ['Bot', 'Tong', 'Zeebaars'],
+          winter: ['Gul', 'Wijting', 'Schar']
+        },
+        tips: 'Best bij wind op de kant.',
+        bereikbaarheid: 'Diverse strandopgangen'
+      }
+    },
+
+    // === WIJK AAN ZEE / ZANDVOORT ===
+    {
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [4.5934, 52.4989] },
+      properties: {
+        layerType: 'zeevisstek',
+        name: 'Strand Wijk aan Zee',
+        regio: 'Noord-Holland',
+        beschrijving: 'Rustig strand met goede vismogelijkheden. Minder druk dan IJmuiden.',
+        parkeren: 'Betaald',
+        beerkanaal: false,
+        vissoorten: {
+          zomer: ['Bot', 'Tong', 'Zeebaars'],
+          winter: ['Gul', 'Wijting', 'Schar']
+        },
+        tips: 'Vooral bot en schar hier. Rustige locatie.',
+        bereikbaarheid: 'Parkeren bij strandpaviljoen'
+      }
+    },
+    {
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [4.5234, 52.3734] },
+      properties: {
+        layerType: 'zeevisstek',
+        name: 'Strand Zandvoort',
+        regio: 'Noord-Holland',
+        beschrijving: 'Populair strand met vismogelijkheden. Let op drukte in het seizoen.',
+        parkeren: 'Betaald',
+        beerkanaal: false,
+        vissoorten: {
+          zomer: ['Bot', 'Tong', 'Harder'],
+          winter: ['Wijting', 'Schar']
+        },
+        tips: 'Beste buiten het badseizoen. Vroege ochtend of late avond.',
+        bereikbaarheid: 'Goede bereikbaarheid, veel parkeerplaatsen'
+      }
+    },
+
+    // === DEN HELDER ===
+    {
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [4.7578, 52.9623] },
+      properties: {
+        layerType: 'zeevisstek',
+        name: 'Havenhoofd Den Helder',
+        regio: 'Den Helder',
+        beschrijving: 'Goede stek aan de marinehaven. Let op scheepvaart.',
+        parkeren: 'Gratis',
+        beerkanaal: false,
+        vissoorten: {
+          zomer: ['Makreel', 'Harder', 'Bot'],
+          winter: ['Kabeljauw', 'Wijting', 'Schar']
+        },
+        tips: 'Veel scheepvaartverkeer, wees alert.',
+        bereikbaarheid: 'Goed bereikbaar'
+      }
+    },
+    {
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [4.7456, 52.9534] },
+      properties: {
+        layerType: 'zeevisstek',
+        name: 'Strand Huisduinen',
+        regio: 'Den Helder',
+        beschrijving: 'Rustig strand bij de vuurtoren. Mooi uitzicht op Texel.',
+        parkeren: 'Gratis',
+        beerkanaal: false,
+        vissoorten: {
+          zomer: ['Bot', 'Schar', 'Harder'],
+          winter: ['Wijting', 'Gul']
+        },
+        tips: 'Mooie locatie, ook voor gezin.',
+        bereikbaarheid: 'Goed bereikbaar'
+      }
+    },
+
+    // === TEXEL ===
+    {
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [4.7234, 53.1534] },
+      properties: {
+        layerType: 'zeevisstek',
+        name: 'Strand De Cocksdorp (Texel)',
+        regio: 'Texel',
+        beschrijving: 'Noordpunt van Texel met sterkere stroming. Bekend om zeebaars.',
+        parkeren: 'Gratis',
+        beerkanaal: false,
+        vissoorten: {
+          zomer: ['Zeebaars', 'Bot', 'Harder'],
+          winter: ['Gul', 'Wijting', 'Schar']
+        },
+        tips: 'Sterkere stroming rond de kop zorgt voor meer zeebaars.',
+        bereikbaarheid: 'Fiets of auto naar strandopgang'
+      }
+    },
+    {
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [4.7023, 53.0856] },
+      properties: {
+        layerType: 'zeevisstek',
+        name: 'Strekdam bij vuurtoren (Texel)',
+        regio: 'Texel',
+        beschrijving: 'Strekdam met mossels en wieren. Ideaal voor zeebaars.',
+        parkeren: 'Gratis',
+        beerkanaal: false,
+        vissoorten: {
+          zomer: ['Zeebaars', 'Harder'],
+          winter: ['Wijting', 'Gul']
+        },
+        tips: 'Stenen begroeid met mossels - magneet voor zeebaars.',
+        bereikbaarheid: 'Kort lopen vanaf parkeerplaats'
+      }
+    },
+    {
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [4.7123, 53.0456] },
+      properties: {
+        layerType: 'zeevisstek',
+        name: 'Strekdammen De Koog (Texel)',
+        regio: 'Texel',
+        beschrijving: 'Meerdere strekdammen met goede mogelijkheden. Goede optie bij wind.',
+        parkeren: 'Betaald (seizoen)',
+        beerkanaal: false,
+        vissoorten: {
+          zomer: ['Zeebaars', 'Bot', 'Harder'],
+          winter: ['Wijting', 'Schar']
+        },
+        tips: 'Bij wind een beschutte optie.',
+        bereikbaarheid: 'Goed bereikbaar vanaf De Koog'
+      }
+    },
+    {
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [4.7534, 53.0123] },
+      properties: {
+        layerType: 'zeevisstek',
+        name: 'Strand paal 9-15 (Texel)',
+        regio: 'Texel',
+        beschrijving: 'Rustigste stuk strand. Nauwelijks badgasten, ideaal voor vissers.',
+        parkeren: 'Gratis',
+        beerkanaal: false,
+        vissoorten: {
+          zomer: ['Bot', 'Tong', 'Zeebaars'],
+          winter: ['Wijting', 'Schar', 'Gul']
+        },
+        tips: 'Geen vergunning nodig voor zeevissen. Max 2 hengels.',
+        bereikbaarheid: 'Rustige locatie, weinig voorzieningen'
+      }
+    },
+
+    // === TERSCHELLING ===
+    {
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [5.2156, 53.3623] },
+      properties: {
+        layerType: 'zeevisstek',
+        name: 'Haven West-Terschelling (strekdammen)',
+        regio: 'Terschelling',
+        beschrijving: 'Beide strekdammen rondom de haven zijn prima stekken.',
+        parkeren: 'Betaald (haven)',
+        beerkanaal: false,
+        vissoorten: {
+          zomer: ['Zeebaars', 'Harder', 'Bot'],
+          winter: ['Wijting', 'Gul']
+        },
+        tips: 'Goede startlocatie. Geen vergunning nodig.',
+        bereikbaarheid: 'Direct bij veerhaven'
+      }
+    },
+    {
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [5.3534, 53.4012] },
+      properties: {
+        layerType: 'zeevisstek',
+        name: 'Noordzeestrand Terschelling',
+        regio: 'Terschelling',
+        beschrijving: 'Eindeloze verlaten stranden. Perfect voor rustige visdag.',
+        parkeren: 'Gratis (fiets aangeraden)',
+        beerkanaal: false,
+        vissoorten: {
+          zomer: ['Bot', 'Tong', 'Zeebaars'],
+          winter: ['Wijting', 'Schar']
+        },
+        tips: 'Naseizoen vrijwel verlaten. Heerlijk rustig vissen.',
+        bereikbaarheid: 'Fiets of te voet over de duinen'
+      }
+    },
+
+    // === ZEELAND - DOMBURG ===
+    {
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [3.4956, 51.5634] },
+      properties: {
+        layerType: 'zeevisstek',
+        name: 'Strand Domburg',
+        regio: 'Zeeland',
+        beschrijving: 'Uitstekend strandvissen. Bekend om tong in de zomer.',
+        parkeren: 'Betaald',
+        beerkanaal: false,
+        vissoorten: {
+          zomer: ['Bot', 'Schol', 'Tong', 'Geep'],
+          winter: ['Wijting', 'Gul']
+        },
+        tips: 'Kan druk zijn in de zomer. Vroege ochtend beste tijd.',
+        bereikbaarheid: 'Goede parkeervoorzieningen'
+      }
+    },
+
+    // === ZEELAND - VLISSINGEN ===
+    {
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [3.5712, 51.4423] },
+      properties: {
+        layerType: 'zeevisstek',
+        name: 'Nollestrand Vlissingen',
+        regio: 'Zeeland',
+        beschrijving: 'Populair strand met goede vismogelijkheden.',
+        parkeren: 'Gratis',
+        beerkanaal: false,
+        vissoorten: {
+          zomer: ['Zeebaars', 'Platvis', 'Makreel'],
+          winter: ['Gul', 'Wijting']
+        },
+        tips: 'Boulevard stranden ook productief.',
+        bereikbaarheid: 'Goede parkeerplaats'
+      }
+    },
+    {
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [3.5834, 51.4389] },
+      properties: {
+        layerType: 'zeevisstek',
+        name: 'Boulevard Vlissingen',
+        regio: 'Zeeland',
+        beschrijving: 'Vissen vanaf de boulevard met mooi uitzicht.',
+        parkeren: 'Betaald',
+        beerkanaal: false,
+        vissoorten: {
+          zomer: ['Zeebaars', 'Harder', 'Bot'],
+          winter: ['Gul', 'Wijting']
+        },
+        tips: 'Gezellige locatie, ook voor gezin.',
+        bereikbaarheid: 'Centrum Vlissingen'
+      }
+    },
+
+    // === ZEELAND - WESTKAPELLE ===
+    {
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [3.4389, 51.5267] },
+      properties: {
+        layerType: 'zeevisstek',
+        name: 'Strand Westkapelle',
+        regio: 'Zeeland',
+        beschrijving: 'Strand bij Westkapelseweg met goede mogelijkheden.',
+        parkeren: 'Gratis',
+        beerkanaal: false,
+        vissoorten: {
+          zomer: ['Bot', 'Zeebaars'],
+          winter: ['Gul', 'Platvis', 'Wijting']
+        },
+        tips: 'Rustigere locatie dan Domburg.',
+        bereikbaarheid: 'Goed bereikbaar'
+      }
+    },
+
+    // === ZEELAND - NEELTJE JANS ===
+    {
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [3.6889, 51.6234] },
+      properties: {
+        layerType: 'zeevisstek',
+        name: 'Neeltje Jans (strekdammen)',
+        regio: 'Zeeland',
+        beschrijving: 'Kunstmatig eiland met uitstekende strekdammen. Diep water dichtbij.',
+        parkeren: 'Betaald (Deltapark)',
+        beerkanaal: false,
+        vissoorten: {
+          zomer: ['Zeebaars', 'Geep'],
+          winter: ['Gul', 'Wijting']
+        },
+        tips: 'Dieper water = sneller op diepte. Hele jaar door gul en wijting.',
+        bereikbaarheid: 'Parkeren bij Deltapark Neeltje Jans'
+      }
+    },
+
+    // === ZEELAND - BROUWERSDAM ===
+    {
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [3.8634, 51.7456] },
+      properties: {
+        layerType: 'zeevisstek',
+        name: 'Brouwersdam (Noordzeezijde)',
+        regio: 'Zeeland',
+        beschrijving: 'Vissen aan Noordzeezijde met goede strekdammen.',
+        parkeren: 'Gratis',
+        beerkanaal: false,
+        vissoorten: {
+          zomer: ['Zeebaars', 'Platvis', 'Geep'],
+          winter: ['Wijting', 'Gul']
+        },
+        tips: 'Noordzeezijde andere vissen dan Grevelingenmeer.',
+        bereikbaarheid: 'Goede parkeerplaatsen langs de dam'
+      }
+    },
+    {
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [3.8512, 51.7534] },
+      properties: {
+        layerType: 'zeevisstek',
+        name: 'Brouwersdam (sluizen)',
+        regio: 'Zeeland',
+        beschrijving: 'Haringvissen bij de sluizen, vooral in april.',
+        parkeren: 'Gratis',
+        beerkanaal: false,
+        vissoorten: {
+          voorjaar: ['Haring'],
+          zomer: ['Zeebaars', 'Harder'],
+          winter: ['Wijting']
+        },
+        tips: 'April is topmaand voor haring bij de sluizen.',
+        bereikbaarheid: 'Parkeren bij sluizen'
+      }
+    },
+
+    // === ZEELAND - RENESSE / SCHARENDIJKE ===
+    {
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [3.7534, 51.7234] },
+      properties: {
+        layerType: 'zeevisstek',
+        name: 'Strand Renesse - Westenschouwen',
+        regio: 'Zeeland',
+        beschrijving: 'Uitgestrekt strandgebied met goede vismogelijkheden.',
+        parkeren: 'Betaald (seizoen)',
+        beerkanaal: false,
+        vissoorten: {
+          zomer: ['Platvis', 'Makreel', 'Geep'],
+          winter: ['Gul', 'Wijting']
+        },
+        tips: 'Seizoensmatig ook paling mogelijk.',
+        bereikbaarheid: 'Diverse strandopgangen'
+      }
+    }
+  ]
+}
+
+export async function createZeevisstekkenLayer(): Promise<VectorLayer<VectorSource>> {
+  const source = new VectorSource()
+
+  const layer = new VectorLayer({
+    source,
+    style: VIS_LAYER_STYLES.zeevisstek,
+    properties: {
+      title: 'Zeevisstekken',
+      name: 'Zeevisstekken'
+    }
+  })
+
+  try {
+    source.addFeatures(
+      new GeoJSON().readFeatures(ZEEVISSTEKKEN_DATA, {
+        featureProjection: 'EPSG:3857'
+      })
+    )
+    console.log(`Loaded ${ZEEVISSTEKKEN_DATA.features.length} zeevisstekken`)
+  } catch (error) {
+    console.error('Failed to load zeevisstekken:', error)
+  }
+
+  return layer
+}

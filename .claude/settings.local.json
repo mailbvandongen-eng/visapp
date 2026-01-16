@@ -36,7 +36,10 @@
       "Bash(curl:*)",
       "WebFetch(domain:service.pdok.nl)",
       "Bash(del \"C:\\VSCode\\visapp\\src\\layers\\hydroOverlayOL.ts\")",
-      "Bash(dir /s /b \"C:\\VSCode\\*getij*\")"
+      "Bash(dir /s /b \"C:\\VSCode\\*getij*\")",
+      "WebFetch(domain:groot-rotterdam.nl)",
+      "WebFetch(domain:www.deroofvisser.com)",
+      "WebFetch(domain:www.ikvis.nl)"
     ]
   }
 }

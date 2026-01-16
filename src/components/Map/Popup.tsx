@@ -126,6 +126,72 @@ export function Popup() {
           if (access) content += `<br/><span class="text-sm text-gray-600">Toegang: ${access}</span>`
         }
 
+        // Zeevisstekken - sea fishing spots with detailed info
+        else if (layerTitle === 'Zeevisstekken' || props.layerType === 'zeevisstek') {
+          const name = props.name || 'Zeevisstek'
+          const regio = props.regio || ''
+          const beschrijving = props.beschrijving || ''
+          const parkeren = props.parkeren || ''
+          const beerkanaal = props.beerkanaal
+          const vissoorten = props.vissoorten || {}
+          const tips = props.tips || ''
+          const bereikbaarheid = props.bereikbaarheid || ''
+
+          // Header with name and region
+          content = `<strong class="text-blue-900 text-lg">${name}</strong>`
+          if (regio) content += `<br/><span class="text-sm text-blue-600 font-medium">${regio}</span>`
+
+          // Beerkanaal warning badge
+          if (beerkanaal) {
+            content += `<br/><span class="inline-block mt-1 px-2 py-0.5 bg-red-100 text-red-700 text-xs font-medium rounded-full">Beperkte toegang</span>`
+          }
+
+          // Parking badge
+          if (parkeren) {
+            const parkeerClass = parkeren.toLowerCase().includes('gratis')
+              ? 'bg-green-100 text-green-700'
+              : parkeren.toLowerCase().includes('betaald')
+                ? 'bg-orange-100 text-orange-700'
+                : 'bg-gray-100 text-gray-700'
+            content += ` <span class="inline-block mt-1 px-2 py-0.5 ${parkeerClass} text-xs font-medium rounded-full">Parkeren: ${parkeren}</span>`
+          }
+
+          // Description
+          if (beschrijving) {
+            content += `<br/><span class="text-sm text-gray-600 mt-2 block">${beschrijving}</span>`
+          }
+
+          // Fish species by season
+          if (vissoorten && Object.keys(vissoorten).length > 0) {
+            content += `<br/><div class="mt-2 pt-2 border-t border-gray-200">`
+            content += `<span class="text-xs font-semibold text-gray-500 uppercase">Vissoorten per seizoen</span>`
+
+            if (vissoorten.voorjaar && vissoorten.voorjaar.length > 0) {
+              content += `<br/><span class="text-sm"><span class="text-green-600 font-medium">Voorjaar:</span> ${vissoorten.voorjaar.join(', ')}</span>`
+            }
+            if (vissoorten.zomer && vissoorten.zomer.length > 0) {
+              content += `<br/><span class="text-sm"><span class="text-yellow-600 font-medium">Zomer:</span> ${vissoorten.zomer.join(', ')}</span>`
+            }
+            if (vissoorten.winter && vissoorten.winter.length > 0) {
+              content += `<br/><span class="text-sm"><span class="text-blue-600 font-medium">Winter:</span> ${vissoorten.winter.join(', ')}</span>`
+            }
+            content += `</div>`
+          }
+
+          // Tips
+          if (tips) {
+            content += `<br/><div class="mt-2 p-2 bg-amber-50 rounded-lg">`
+            content += `<span class="text-xs font-semibold text-amber-700">💡 Tip:</span>`
+            content += `<span class="text-sm text-amber-800 block">${tips}</span>`
+            content += `</div>`
+          }
+
+          // Accessibility
+          if (bereikbaarheid) {
+            content += `<br/><span class="text-xs text-gray-500">📍 ${bereikbaarheid}</span>`
+          }
+        }
+
         // Generic fallback for other features
         else if (props.name || props.title) {
           const name = props.name || props.title

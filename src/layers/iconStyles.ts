@@ -15,6 +15,9 @@ export const LUCIDE_ICONS = {
   // Boat ramp / Slipway - custom triangle pointing down into water
   slipway: 'M4 8h16l-8 12L4 8zM4 8V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2M2 20h20',
 
+  // Sea fishing - fishing rod with waves
+  fishingRod: 'M3 3l4 4M7 7l10 10M17 17l2 2M21 21l-4-2M12 12l-3 9M2 17h3M2 14h2M2 20h4',
+
   // Default
   circle: 'M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z',
 }
@@ -112,5 +115,12 @@ export const VIS_LAYER_STYLES = {
     color: 'white',
     bgColor: '#00BCD4',  // Cyan
     baseSize: 26
+  }),
+
+  zeevisstek: createIconStyle({
+    icon: 'waves',
+    color: 'white',
+    bgColor: '#0D47A1',  // Dark blue (sea)
+    baseSize: 28
   }),
 }
