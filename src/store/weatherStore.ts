@@ -65,8 +65,8 @@ export const useWeatherStore = create<WeatherState>((set, get) => ({
         current: 'temperature_2m,relative_humidity_2m,surface_pressure,wind_speed_10m,wind_direction_10m,weather_code,precipitation',
         hourly: 'temperature_2m,wind_speed_10m,wind_direction_10m,surface_pressure,weather_code,precipitation_probability,precipitation',
         minutely_15: 'precipitation',
-        past_hours: '24',
-        forecast_hours: '48',
+        past_hours: '48',
+        forecast_hours: '168',
         past_minutely_15: '0',
         forecast_minutely_15: '8',
         timezone: 'Europe/Amsterdam'

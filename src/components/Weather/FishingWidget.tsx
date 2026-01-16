@@ -1466,6 +1466,9 @@ function FishScoreModal({
   combinedScore: number;
   onClose: () => void;
 }) {
+  // Time navigation state - hours from now (0 = now in center)
+  const [timeOffset, setTimeOffset] = useState(0)
+
   // Get moon phase name for display
   const moonPhase = getMoonPhase(new Date())
   const moonPhaseName = getMoonPhaseName(moonPhase)
@@ -1536,8 +1539,27 @@ function FishScoreModal({
   const weatherScore = getWeatherScore()
   const moonScore = getMoonScore()
 
-  // Pressure data for chart
-  const data48h = pressureHistory.slice(-72)
+  // Pressure data for chart - find "now" position
+  const now = new Date()
+  const nowIndex = pressureHistory.findIndex(d => new Date(d.time) >= now)
+  const actualNowIndex = nowIndex === -1 ? pressureHistory.length - 1 : Math.max(0, nowIndex - 1)
+
+  // Window size: 48 hours on each side (96 total visible)
+  const windowSize = 96
+  const halfWindow = windowSize / 2
+
+  // Calculate visible window based on offset
+  const centerIndex = actualNowIndex + timeOffset
+  const startIndex = Math.max(0, centerIndex - halfWindow)
+  const endIndex = Math.min(pressureHistory.length, centerIndex + halfWindow)
+  const visibleData = pressureHistory.slice(startIndex, endIndex)
+
+  // Calculate where "now" is in the visible window
+  const nowPositionInWindow = actualNowIndex - startIndex
+
+  // Calculate max offset range (how far we can slide)
+  const maxPastOffset = -Math.min(actualNowIndex - halfWindow, 0) // Can't go past start
+  const maxFutureOffset = Math.max(0, pressureHistory.length - actualNowIndex - halfWindow)
 
   const getScoreColor = (s: number) => {
     if (s >= 2.5) return 'text-green-500'
@@ -1663,11 +1685,11 @@ function FishScoreModal({
           </div>
 
           {/* Pressure trend chart */}
-          {data48h.length > 0 && (
+          {visibleData.length > 0 && (
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <Gauge size={14} className="text-purple-500" />
-                <span className="text-xs font-medium text-gray-600">Luchtdruk verloop (48u)</span>
+                <span className="text-xs font-medium text-gray-600">Luchtdruk verloop</span>
                 <div className="ml-auto flex items-center gap-1">
                   {pressureTrend === 'rising' && <TrendingUp size={12} className="text-green-500" />}
                   {pressureTrend === 'falling' && <TrendingDown size={12} className="text-red-500" />}
@@ -1677,32 +1699,95 @@ function FishScoreModal({
                   </span>
                 </div>
               </div>
-              <div className="relative bg-gray-100 rounded-xl p-2 h-24">
-                <svg className="absolute inset-2 w-[calc(100%-16px)] h-[calc(100%-16px)]" viewBox="0 0 100 100" preserveAspectRatio="none">
-                  {/* Optimal zone */}
-                  <rect x="0" y="20" width="100" height="40" fill="#22c55e" opacity="0.1" />
-                  {/* Pressure line */}
-                  {data48h.length > 1 && (
+              <div className="relative bg-gray-100 rounded-xl p-2 h-28">
+                <svg className="absolute inset-2 w-[calc(100%-16px)] h-[calc(100%-24px)]" viewBox="0 0 100 100" preserveAspectRatio="none">
+                  {/* Optimal zone (high pressure) */}
+                  <rect x="0" y="10" width="100" height="30" fill="#22c55e" opacity="0.1" />
+                  {/* Pressure line - past (before now) */}
+                  {visibleData.length > 1 && nowPositionInWindow > 0 && (
                     <path
-                      d={`M ${data48h.slice(-48).map((d, i) => {
-                        const x = (i / 47) * 100
-                        const minP = Math.min(...data48h.slice(-48).map(p => p.pressure)) - 5
-                        const maxP = Math.max(...data48h.slice(-48).map(p => p.pressure)) + 5
+                      d={`M ${visibleData.slice(0, Math.min(nowPositionInWindow + 1, visibleData.length)).map((d, i) => {
+                        const x = (i / (visibleData.length - 1)) * 100
+                        const minP = Math.min(...visibleData.map(p => p.pressure)) - 3
+                        const maxP = Math.max(...visibleData.map(p => p.pressure)) + 3
+                        const y = 100 - ((d.pressure - minP) / (maxP - minP)) * 100
+                        return `${x} ${y}`
+                      }).join(' L ')}`}
+                      fill="none"
+                      stroke="#8b5cf6"
+                      strokeWidth="2.5"
+                    />
+                  )}
+                  {/* Pressure line - future (after now) */}
+                  {visibleData.length > 1 && nowPositionInWindow < visibleData.length && (
+                    <path
+                      d={`M ${visibleData.slice(Math.max(0, nowPositionInWindow)).map((d, i) => {
+                        const actualIndex = Math.max(0, nowPositionInWindow) + i
+                        const x = (actualIndex / (visibleData.length - 1)) * 100
+                        const minP = Math.min(...visibleData.map(p => p.pressure)) - 3
+                        const maxP = Math.max(...visibleData.map(p => p.pressure)) + 3
                         const y = 100 - ((d.pressure - minP) / (maxP - minP)) * 100
                         return `${x} ${y}`
                       }).join(' L ')}`}
                       fill="none"
                       stroke="#8b5cf6"
                       strokeWidth="2"
+                      strokeDasharray="4,2"
+                      opacity="0.7"
                     />
                   )}
-                  {/* Now marker */}
-                  <line x1="100" y1="0" x2="100" y2="100" stroke="#f59e0b" strokeWidth="1" strokeDasharray="2,2" />
+                  {/* Now marker line */}
+                  {nowPositionInWindow >= 0 && nowPositionInWindow < visibleData.length && (
+                    <line
+                      x1={(nowPositionInWindow / (visibleData.length - 1)) * 100}
+                      y1="0"
+                      x2={(nowPositionInWindow / (visibleData.length - 1)) * 100}
+                      y2="100"
+                      stroke="#f59e0b"
+                      strokeWidth="2"
+                    />
+                  )}
                 </svg>
+                {/* Now indicator */}
+                {nowPositionInWindow >= 0 && nowPositionInWindow < visibleData.length && (
+                  <div
+                    className="absolute top-1 bg-amber-500 text-white text-[8px] px-1 rounded font-medium"
+                    style={{ left: `calc(8px + ${(nowPositionInWindow / (visibleData.length - 1)) * 100}% - 10px)` }}
+                  >
+                    Nu
+                  </div>
+                )}
+                {/* Time labels */}
                 <div className="absolute bottom-0.5 left-2 right-2 flex justify-between text-[8px] text-gray-400">
-                  <span>-48u</span>
-                  <span>-24u</span>
-                  <span>Nu</span>
+                  <span>{visibleData[0] ? new Date(visibleData[0].time).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' }) : ''}</span>
+                  <span>{visibleData[Math.floor(visibleData.length / 2)] ? new Date(visibleData[Math.floor(visibleData.length / 2)].time).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' }) : ''}</span>
+                  <span>{visibleData[visibleData.length - 1] ? new Date(visibleData[visibleData.length - 1].time).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' }) : ''}</span>
+                </div>
+                {/* Pressure value labels */}
+                <div className="absolute top-2 right-3 text-[9px] text-purple-600 font-medium">
+                  {Math.round(Math.max(...visibleData.map(p => p.pressure)))} hPa
+                </div>
+                <div className="absolute bottom-5 right-3 text-[9px] text-purple-400">
+                  {Math.round(Math.min(...visibleData.map(p => p.pressure)))} hPa
+                </div>
+              </div>
+
+              {/* Time slider */}
+              <div className="space-y-1">
+                <input
+                  type="range"
+                  min={-actualNowIndex + halfWindow}
+                  max={pressureHistory.length - actualNowIndex - halfWindow}
+                  value={timeOffset}
+                  onChange={(e) => setTimeOffset(parseInt(e.target.value))}
+                  className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-purple-500"
+                />
+                <div className="flex justify-between text-[9px] text-gray-400">
+                  <span>← Verleden</span>
+                  <span className="text-purple-500 font-medium">
+                    {timeOffset === 0 ? 'Nu gecentreerd' : timeOffset > 0 ? `+${timeOffset}u vooruit` : `${timeOffset}u terug`}
+                  </span>
+                  <span>Toekomst →</span>
                 </div>
               </div>
             </div>
