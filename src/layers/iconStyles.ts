@@ -1,5 +1,6 @@
-import { Style, Icon } from 'ol/style'
+import { Style, Icon, Stroke, Circle, Fill } from 'ol/style'
 import type { FeatureLike } from 'ol/Feature'
+import type { Geometry } from 'ol/geom'
 
 // Lucide icon SVG paths (24x24 viewBox)
 export const LUCIDE_ICONS = {
@@ -123,4 +124,68 @@ export const VIS_LAYER_STYLES = {
     bgColor: '#0D47A1',  // Dark blue (sea)
     baseSize: 28
   }),
+}
+
+// Create a style function that handles both Points and LineStrings for zeevisstekken
+const zeevisstekLineStyleCache = new Map<string, Style>()
+const zeevisstekPointStyleCache = new Map<string, Style>()
+
+export function createZeevisstekStyle() {
+  const bgColor = '#0D47A1'  // Dark blue (sea)
+  const iconPath = LUCIDE_ICONS.waves
+
+  return function(feature: FeatureLike, resolution: number): Style | Style[] {
+    const geometry = feature.getGeometry() as Geometry
+    const geometryType = geometry?.getType()
+
+    if (geometryType === 'LineString' || geometryType === 'MultiLineString') {
+      // Line style for fishing areas along canals/piers
+      const width = resolution > 50 ? 4 : resolution > 20 ? 5 : 6
+      const cacheKey = `line-${width}`
+
+      let style = zeevisstekLineStyleCache.get(cacheKey)
+      if (!style) {
+        style = new Style({
+          stroke: new Stroke({
+            color: bgColor,
+            width: width,
+            lineCap: 'round',
+            lineJoin: 'round'
+          })
+        })
+        zeevisstekLineStyleCache.set(cacheKey, style)
+      }
+
+      // Add a white outline style
+      const outlineStyle = new Style({
+        stroke: new Stroke({
+          color: 'white',
+          width: width + 2,
+          lineCap: 'round',
+          lineJoin: 'round'
+        })
+      })
+
+      return [outlineStyle, style]
+    } else {
+      // Point style (existing icon style)
+      const scale = getScaleForResolution(resolution)
+      const cacheKey = `point-${scale.toFixed(2)}`
+
+      let style = zeevisstekPointStyleCache.get(cacheKey)
+      if (!style) {
+        const svgSrc = createFilledIconSvg(iconPath, bgColor, 'white', 28)
+        style = new Style({
+          image: new Icon({
+            src: svgSrc,
+            scale: scale,
+            anchor: [0.5, 0.5],
+          })
+        })
+        zeevisstekPointStyleCache.set(cacheKey, style)
+      }
+
+      return style
+    }
+  }
 }
