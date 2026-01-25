@@ -41,8 +41,9 @@ export function SettingsPanel() {
   const [widgetsExpanded, setWidgetsExpanded] = useState(false)
 
   // Handle background change - also apply to layer visibility
-  const handleBackgroundChange = (value: 'OpenStreetMap' | 'Luchtfoto' | 'Terrein') => {
+  const handleBackgroundChange = (value: 'OpenStreetMap' | 'Luchtfoto' | 'Terrein' | 'CartoDB Light') => {
     setDefaultBackground(value)
+    setLayerVisibility('CartoDB Light', value === 'CartoDB Light')
     setLayerVisibility('Terrein', value === 'Terrein')
     setLayerVisibility('OpenStreetMap', value === 'OpenStreetMap')
     setLayerVisibility('Luchtfoto', value === 'Luchtfoto')
@@ -125,9 +126,10 @@ export function SettingsPanel() {
                 <p className="text-sm font-medium text-gray-700">Standaard achtergrond</p>
                 <select
                   value={defaultBackground}
-                  onChange={(e) => handleBackgroundChange(e.target.value as 'OpenStreetMap' | 'Luchtfoto' | 'Terrein')}
+                  onChange={(e) => handleBackgroundChange(e.target.value as 'OpenStreetMap' | 'Luchtfoto' | 'Terrein' | 'CartoDB Light')}
                   className="mt-1 w-full px-2 py-1 text-sm border border-gray-200 rounded-lg bg-white outline-none focus:ring-2 focus:ring-orange-400"
                 >
+                  <option value="CartoDB Light">Light (standaard)</option>
                   <option value="Terrein">Terrein (reliëf)</option>
                   <option value="OpenStreetMap">OpenStreetMap</option>
                   <option value="Luchtfoto">Satelliet</option>
