@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { Layers, Anchor, Ship, Waves, MapPin, Check, Tag, Mountain, X, Droplets } from 'lucide-react'
+import { Layers, Anchor, Ship, Waves, MapPin, Check, Tag, Mountain, X, Droplets, ExternalLink } from 'lucide-react'
 import { useLayerStore, useUIStore } from '../../store'
 
 const VIS_LAYERS = [
@@ -161,7 +161,7 @@ export function LayerPanel() {
                 </div>
 
                 {/* Fishing layers */}
-                <div>
+                <div className="mb-3 pb-2 border-b border-gray-100">
                   <div className="text-xs font-medium text-orange-600 mb-1.5 px-1 uppercase tracking-wide">Vislagen</div>
                   <div className="space-y-0.5">
                     {VIS_LAYERS.map((layer) => {
@@ -202,6 +202,26 @@ export function LayerPanel() {
                       )
                     })}
                   </div>
+                </div>
+
+                {/* External links */}
+                <div>
+                  <div className="text-xs font-medium text-blue-600 mb-1.5 px-1 uppercase tracking-wide">Externe bronnen</div>
+                  <a
+                    href="https://www.visplanner.nl"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors border-0 outline-none bg-transparent hover:bg-blue-50 text-gray-600 hover:text-blue-600 no-underline"
+                  >
+                    <div className="w-5 h-5 rounded flex items-center justify-center bg-blue-500">
+                      <MapPin size={12} className="text-white" />
+                    </div>
+                    <span className="text-sm">VISplanner</span>
+                    <ExternalLink size={12} className="ml-auto text-gray-400" />
+                  </a>
+                  <p className="text-[10px] text-gray-400 px-2 mt-1">
+                    Bekijk waar je mag vissen met je VISpas
+                  </p>
                 </div>
               </div>
             </motion.div>
