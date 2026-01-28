@@ -44,7 +44,13 @@
       "WebFetch(domain:data.overheid.nl)",
       "Bash(git commit -m \"$(cat <<''EOF''\nfeat: VISplanner externe link toegevoegd aan LayerPanel\n\nNieuwe sectie \"Externe bronnen\" met directe link naar visplanner.nl\nzodat gebruikers kunnen checken waar ze mogen vissen met hun VISpas.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n)\")",
       "Bash(npm run dev)",
-      "WebFetch(domain:geoweb.rijkswaterstaat.nl)"
+      "WebFetch(domain:geoweb.rijkswaterstaat.nl)",
+      "WebFetch(domain:geo.rijkswaterstaat.nl)",
+      "WebFetch(domain:www.rijkswaterstaat.nl)",
+      "WebFetch(domain:vaarweginformatie.nl)",
+      "WebFetch(domain:www.pdok.nl)",
+      "WebFetch(domain:geoservices.rijkswaterstaat.nl)",
+      "WebFetch(domain:nationaalgeoregister.nl)"
     ]
   }
 }

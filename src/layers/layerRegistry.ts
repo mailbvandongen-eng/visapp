@@ -79,6 +79,14 @@ export const layerRegistry: Record<string, LayerDefinition> = {
       return createVaarwegmarkeringenLayer('vast')
     },
     immediateLoad: false
+  },
+  'Bathymetrie': {
+    name: 'Bathymetrie',
+    factory: async () => {
+      const { createBathymetrieLayer } = await import('./bathymetrieOL')
+      return createBathymetrieLayer()
+    },
+    immediateLoad: false
   }
 }
 

@@ -1,11 +1,12 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { Layers, Anchor, Ship, Waves, MapPin, Check, Tag, Mountain, X, Droplets, ExternalLink, CircleDot, Landmark } from 'lucide-react'
+import { Layers, Anchor, Ship, Waves, MapPin, Check, Tag, Mountain, X, Droplets, ExternalLink, CircleDot, Landmark, Ruler } from 'lucide-react'
 import { useLayerStore, useUIStore } from '../../store'
 
 const VIS_LAYERS = [
   { name: 'Aanlegsteigers', icon: Anchor, color: '#2196F3' },
   { name: 'Trailerhellingen', icon: Ship, color: '#4CAF50' },
   { name: 'Dieptekaart', icon: Waves, color: '#00BCD4' },
+  { name: 'Bathymetrie', icon: Ruler, color: '#7C3AED' },
   { name: 'Viswater', icon: MapPin, color: '#9C27B0' },
   { name: 'Zeevisstekken', icon: Waves, color: '#0D47A1' },
   { name: 'Boeien', icon: CircleDot, color: '#E91E63' },
