@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { Search, X, ExternalLink } from 'lucide-react'
-import { useMapStore } from '../../store'
+import { useMapStore, useSettingsStore } from '../../store'
 import { fromLonLat } from 'ol/proj'
 import { motion, AnimatePresence } from 'framer-motion'
 
@@ -13,6 +13,7 @@ interface SearchResult {
 
 export function SearchBox() {
   const map = useMapStore(state => state.map)
+  const showWeatherWidget = useSettingsStore(state => state.showWeatherWidget)
 
   const [isExpanded, setIsExpanded] = useState(false)
   const [query, setQuery] = useState('')
@@ -173,10 +174,13 @@ export function SearchBox() {
   }
 
   // Expanded state: full search bar
+  // Position left edge based on weather widget visibility
+  const leftPosition = showWeatherWidget ? 'left-[185px]' : 'left-2'
+
   return (
     <div
       ref={containerRef}
-      className="fixed left-[52px] right-14 z-[850]"
+      className={`fixed ${leftPosition} right-14 z-[850]`}
       style={safeTopStyle}
     >
       <motion.div

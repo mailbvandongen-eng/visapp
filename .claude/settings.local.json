@@ -39,7 +39,11 @@
       "Bash(dir /s /b \"C:\\VSCode\\*getij*\")",
       "WebFetch(domain:groot-rotterdam.nl)",
       "WebFetch(domain:www.deroofvisser.com)",
-      "WebFetch(domain:www.ikvis.nl)"
+      "WebFetch(domain:www.ikvis.nl)",
+      "WebFetch(domain:www.nationaalgeoregister.nl)",
+      "WebFetch(domain:data.overheid.nl)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nfeat: VISplanner externe link toegevoegd aan LayerPanel\n\nNieuwe sectie \"Externe bronnen\" met directe link naar visplanner.nl\nzodat gebruikers kunnen checken waar ze mogen vissen met hun VISpas.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(npm run dev)"
     ]
   }
 }

@@ -18,6 +18,7 @@ import { LayerPanel } from './components/UI/LayerPanel'
 import { SettingsPanel } from './components/UI/SettingsPanel'
 import { Popup } from './components/Map/Popup'
 import { PasswordGate } from './components/Auth/PasswordGate'
+import { GooglePhotosButton, GooglePhotoMarkers, PhotoActionDialog } from './components/GooglePhotos'
 import { useUIStore, useSettingsStore } from './store'
 
 function App() {
@@ -36,6 +37,7 @@ function App() {
         <MapContainer />
         <GpsMarker />
         <CatchMarkers />
+        <GooglePhotoMarkers />
         <SpotMarkers />
         <Popup />
         <LongPressMenu />
@@ -48,6 +50,7 @@ function App() {
         {/* Bottom bar: Presets & Reset (left), Layers & Catch & GPS (right) */}
         <PresetButtons />
         <ResetButton />
+        <GooglePhotosButton />
         <LayerPanel />
         <AddCatchButton />
         <GpsButton />
@@ -55,6 +58,7 @@ function App() {
         {/* Modals */}
         <InfoButton />
         <SettingsPanel />
+        <PhotoActionDialog />
         <AnimatePresence>
           {spotFormOpen && (
             <AddSpotForm
