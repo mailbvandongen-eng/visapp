@@ -63,6 +63,22 @@ export const layerRegistry: Record<string, LayerDefinition> = {
       return createZeevisstekkenLayer()
     },
     immediateLoad: false
+  },
+  'Boeien': {
+    name: 'Boeien',
+    factory: async () => {
+      const { createVaarwegmarkeringenLayer } = await import('./vaarwegmarkeringenOL')
+      return createVaarwegmarkeringenLayer('drijvend')
+    },
+    immediateLoad: false
+  },
+  'Bakens': {
+    name: 'Bakens',
+    factory: async () => {
+      const { createVaarwegmarkeringenLayer } = await import('./vaarwegmarkeringenOL')
+      return createVaarwegmarkeringenLayer('vast')
+    },
+    immediateLoad: false
   }
 }
 

@@ -192,6 +192,65 @@ export function Popup() {
           }
         }
 
+        // Vaarwegmarkeringen - boeien (drijvend)
+        else if (layerTitle === 'Boeien' || props.layerType === 'boei') {
+          const name = props.benaming || props.benamCod || 'Boei'
+          const vaarwater = props.vaarwater || ''
+          const kleur = props.kleurpatr || ''
+          const vorm = props.objVorm || ''
+          const lichtKleur = props.lichtKlr || props.lichtKleur || ''
+          const signKar = props.signKar || ''
+          const inbedrijf = props.inbedrijf || ''
+
+          content = `<strong class="text-pink-800 text-lg">${name}</strong>`
+          if (vaarwater) content += `<br/><span class="text-sm text-pink-600 font-medium">${vaarwater}</span>`
+
+          // Kleur badge
+          if (kleur) {
+            const kleurClass = kleur.toLowerCase().includes('rood') ? 'bg-red-100 text-red-700'
+              : kleur.toLowerCase().includes('groen') ? 'bg-green-100 text-green-700'
+              : kleur.toLowerCase().includes('geel') ? 'bg-yellow-100 text-yellow-700'
+              : 'bg-gray-100 text-gray-700'
+            content += `<br/><span class="inline-block mt-1 px-2 py-0.5 ${kleurClass} text-xs font-medium rounded-full">${kleur}</span>`
+          }
+
+          if (vorm) content += `<br/><span class="text-sm text-gray-600">Vorm: ${vorm}</span>`
+          if (lichtKleur && lichtKleur !== '#') content += `<br/><span class="text-sm text-gray-600">Licht: ${lichtKleur}</span>`
+          if (signKar && signKar !== 'Niet toegewezen') content += `<br/><span class="text-sm text-gray-600">Signaal: ${signKar}</span>`
+          if (inbedrijf) content += `<br/><span class="text-xs text-gray-400">In bedrijf sinds: ${inbedrijf}</span>`
+        }
+
+        // Vaarwegmarkeringen - bakens (vast)
+        else if (layerTitle === 'Bakens' || props.layerType === 'baken') {
+          const name = props.benaming || props.benamCod || 'Baken'
+          const vaarwater = props.vaarwater || ''
+          const kleur = props.kleurpatr || ''
+          const hoogte = props.objHoogte || ''
+          const nautFunct = props.nautFunct || ''
+          const lichtKleur = props.lichtKl || props.lichtKleur || ''
+          const lichtHoogte = props.lichtHgt || ''
+          const inbedrijf = props.inbedrijf || ''
+
+          content = `<strong class="text-orange-800 text-lg">${name}</strong>`
+          if (vaarwater) content += `<br/><span class="text-sm text-orange-600 font-medium">${vaarwater}</span>`
+
+          // Kleur badge
+          if (kleur) {
+            const kleurClass = kleur.toLowerCase().includes('rood') ? 'bg-red-100 text-red-700'
+              : kleur.toLowerCase().includes('groen') ? 'bg-green-100 text-green-700'
+              : kleur.toLowerCase().includes('geel') ? 'bg-yellow-100 text-yellow-700'
+              : kleur.toLowerCase().includes('wit') ? 'bg-gray-100 text-gray-700'
+              : 'bg-gray-100 text-gray-700'
+            content += `<br/><span class="inline-block mt-1 px-2 py-0.5 ${kleurClass} text-xs font-medium rounded-full">${kleur}</span>`
+          }
+
+          if (nautFunct) content += `<br/><span class="text-sm text-gray-600">Functie: ${nautFunct}</span>`
+          if (hoogte) content += `<br/><span class="text-sm text-gray-600">Hoogte: ${hoogte}m</span>`
+          if (lichtKleur && lichtKleur !== '#') content += `<br/><span class="text-sm text-gray-600">Licht: ${lichtKleur}</span>`
+          if (lichtHoogte) content += `<br/><span class="text-sm text-gray-600">Lichthoogte: ${lichtHoogte}m</span>`
+          if (inbedrijf) content += `<br/><span class="text-xs text-gray-400">In bedrijf sinds: ${inbedrijf}</span>`
+        }
+
         // Generic fallback for other features
         else if (props.name || props.title) {
           const name = props.name || props.title
