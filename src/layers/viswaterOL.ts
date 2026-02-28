@@ -42,6 +42,19 @@ export async function createViswaterLayer(): Promise<VectorLayer<VectorSource>> 
       body: `data=${encodeURIComponent(OVERPASS_QUERY)}`
     })
 
+    if (!response.ok) {
+      if (response.status === 429) {
+        throw new Error('Overpass rate limit bereikt (429). Probeer later opnieuw.')
+      }
+      throw new Error(`Overpass request failed: ${response.status}`)
+    }
+
+    const contentType = response.headers.get('content-type') || ''
+    if (!contentType.includes('application/json')) {
+      const bodyPreview = (await response.text()).slice(0, 120)
+      throw new Error(`Overpass gaf geen JSON terug (${contentType}): ${bodyPreview}`)
+    }
+
     const data = await response.json()
 
     // Convert Overpass response to GeoJSON
@@ -82,6 +95,7 @@ export async function createViswaterLayer(): Promise<VectorLayer<VectorSource>> 
     console.log(`Loaded ${features.length} viswateren`)
   } catch (error) {
     console.error('Failed to load viswater:', error)
+    throw error
   }
 
   return layer

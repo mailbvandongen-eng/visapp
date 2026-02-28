@@ -1,4 +1,4 @@
-import{V as s,a as i}from"./index-DCbvZDFs.js";import{G as c}from"./GeoJSON-FAnF0HfZ.js";import{V as p}from"./iconStyles-C_sco1Tc.js";const u=`
+import{V as s,a as i}from"./index-B6JBE438.js";import{G as c}from"./GeoJSON-A0iHQ-fv.js";import{V as p}from"./iconStyles-ehfmLwsR.js";const u=`
 [out:json][timeout:60];
 area["name"="Nederland"]->.nl;
 (
@@ -7,4 +7,4 @@ area["name"="Nederland"]->.nl;
 );
 out center tags;
 `;async function f(){const a=new s,o=new i({source:a,style:p.trailerhellingen,properties:{title:"Trailerhellingen",name:"Trailerhellingen"}});try{const n=(await(await fetch("https://overpass-api.de/api/interpreter",{method:"POST",body:`data=${encodeURIComponent(u)}`})).json()).elements.filter(t=>t.lat&&t.lon||t.center).map(t=>{const e=t.tags||{};return{type:"Feature",geometry:{type:"Point",coordinates:[t.lon||t.center?.lon,t.lat||t.center?.lat]},properties:{layerType:"trailerhelling",id:t.id,name:e.name||null,access:e.access||null,fee:e.fee||null,surface:e.surface||null,operator:e.operator||null,website:e.website||e["contact:website"]||null,description:e.description||null,opening_hours:e.opening_hours||null,capacity:e.capacity||null,boat:e.boat||e["seamark:small_craft_facility:category"]||null}}}),l={type:"FeatureCollection",features:n};a.addFeatures(new c().readFeatures(l,{featureProjection:"EPSG:3857"})),console.log(`Loaded ${n.length} trailerhellingen`)}catch(r){console.error("Failed to load trailerhellingen:",r)}return o}export{f as createBoothellingenLayer};
-//# sourceMappingURL=boothellingenOL-HwASZjMu.js.map
+//# sourceMappingURL=boothellingenOL-CEeBEQp-.js.map

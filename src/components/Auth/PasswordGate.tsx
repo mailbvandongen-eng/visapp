@@ -44,8 +44,9 @@ export function PasswordGate({ children }: PasswordGateProps) {
     try {
       setGoogleError(null)
       await signInWithGoogle()
-    } catch (error: any) {
-      setGoogleError('Google login mislukt')
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Google login mislukt'
+      setGoogleError(message)
       setTimeout(() => setGoogleError(null), 3000)
     }
   }

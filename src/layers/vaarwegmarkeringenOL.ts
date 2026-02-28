@@ -69,6 +69,12 @@ export async function createVaarwegmarkeringenLayer(type: 'drijvend' | 'vast'): 
       throw new Error(`WFS request failed: ${response.status}`)
     }
 
+    const contentType = response.headers.get('content-type') || ''
+    if (!contentType.includes('json')) {
+      const bodyPreview = (await response.text()).slice(0, 120)
+      throw new Error(`PDOK WFS gaf geen JSON terug (${contentType}): ${bodyPreview}`)
+    }
+
     const data = await response.json()
 
     // Transform features to include layerType
@@ -94,6 +100,7 @@ export async function createVaarwegmarkeringenLayer(type: 'drijvend' | 'vast'): 
     console.log(`Loaded ${features.length} ${isDrijvend ? 'boeien' : 'bakens'}`)
   } catch (error) {
     console.error(`Failed to load ${type} markeringen:`, error)
+    throw error
   }
 
   return layer

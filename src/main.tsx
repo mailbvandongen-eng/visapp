@@ -3,6 +3,12 @@ import App from './App.tsx'
 import { version } from '../package.json'
 import { useGooglePhotosStore } from './store/googlePhotosStore'
 
+if (window.location.hostname === '127.0.0.1') {
+  const url = new URL(window.location.href)
+  url.hostname = 'localhost'
+  window.location.replace(url.toString())
+}
+
 console.log(`%c🐟 VisApp v${version}`, 'background: #2196F3; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold;')
 
 // Handle Google Photos OAuth callback

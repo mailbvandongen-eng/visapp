@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import type { FirebaseError } from 'firebase/app'
 import {
   signInWithPopup,
   GoogleAuthProvider,
@@ -27,6 +28,23 @@ interface AuthState {
 
 const googleProvider = new GoogleAuthProvider()
 
+function getGoogleAuthErrorMessage(error: unknown): string {
+  const firebaseError = error as FirebaseError | undefined
+  const code = firebaseError?.code
+
+  if (code === 'auth/unauthorized-domain') {
+    return 'Google login faalt: domein niet geautoriseerd in Firebase Auth (gebruik lokaal bij voorkeur localhost).'
+  }
+  if (code === 'auth/popup-blocked') {
+    return 'Google login faalt: popup geblokkeerd door de browser.'
+  }
+  if (code === 'auth/popup-closed-by-user') {
+    return 'Google login geannuleerd: popup is gesloten.'
+  }
+
+  return firebaseError?.message || 'Google login mislukt'
+}
+
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
@@ -48,7 +66,7 @@ export const useAuthStore = create<AuthState>()(
           set({ user: result.user, isAuthenticated: true })
         } catch (error) {
           console.error('Google sign-in error:', error)
-          throw error
+          throw new Error(getGoogleAuthErrorMessage(error))
         }
       },
 

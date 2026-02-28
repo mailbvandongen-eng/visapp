@@ -150,6 +150,7 @@ export const useLayerStore = create<LayerState>()(
         console.error(`Failed to load layer "${name}":`, error)
         set(state => {
           state.loadingState[name] = 'error'
+          state.visible[name] = false
         })
       }
     }
