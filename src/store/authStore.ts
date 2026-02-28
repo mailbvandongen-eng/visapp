@@ -22,7 +22,7 @@ interface AuthState {
   loading: boolean
   signInWithGoogle: () => Promise<void>
   logout: () => Promise<void>
-  initAuth: () => void
+  initAuth: () => () => void
 }
 
 const googleProvider = new GoogleAuthProvider()
@@ -62,13 +62,15 @@ export const useAuthStore = create<AuthState>()(
       },
 
       initAuth: () => {
-        onAuthStateChanged(auth, (user) => {
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
           if (user) {
             set({ user, isAuthenticated: true, loading: false })
           } else {
-            set({ user: null, loading: false })
+            set({ user: null, isAuthenticated: false, loading: false })
           }
         })
+
+        return unsubscribe
       }
     }),
     {

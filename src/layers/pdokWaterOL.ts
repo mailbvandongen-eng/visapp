@@ -9,6 +9,7 @@ export function createPDOKWaterLayer() {
     properties: { title: 'PDOK Water NL', type: 'wms' },
     visible: true, // Default visible for water overlay
     opacity: 0.6,
+    zIndex: 20,
     source: new TileWMS({
       url: 'https://service.pdok.nl/brt/top10nl/wms/v1_0',
       params: {

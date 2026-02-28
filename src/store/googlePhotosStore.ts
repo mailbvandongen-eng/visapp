@@ -342,8 +342,6 @@ export const useGooglePhotosStore = create<GooglePhotosState>()(
     {
       name: 'visapp-google-photos',
       partialize: (state) => ({
-        accessToken: state.accessToken,
-        tokenExpiresAt: state.tokenExpiresAt,
         // Store photos but they'll need URL refresh
         photos: state.photos.map(p => ({
           ...p,

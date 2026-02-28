@@ -8,14 +8,15 @@ interface PasswordGateProps {
 }
 
 export function PasswordGate({ children }: PasswordGateProps) {
-  const { isAuthenticated, checkPassword, signInWithGoogle, user, loading, initAuth } = useAuthStore()
+  const { isAuthenticated, checkPassword, signInWithGoogle, loading, initAuth } = useAuthStore()
   const [password, setPassword] = useState('')
   const [error, setError] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [googleError, setGoogleError] = useState<string | null>(null)
 
   useEffect(() => {
-    initAuth()
+    const cleanup = initAuth()
+    return cleanup
   }, [initAuth])
 
   if (loading) {

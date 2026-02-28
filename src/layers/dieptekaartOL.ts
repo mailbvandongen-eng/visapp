@@ -6,6 +6,7 @@ import XYZ from 'ol/source/XYZ'
 // Source: https://openseamap.org
 export function createDieptekaartLayer(): TileLayer<XYZ> {
   return new TileLayer({
+    zIndex: 30,
     source: new XYZ({
       url: 'https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png',
       attributions: '© OpenSeaMap contributors',
