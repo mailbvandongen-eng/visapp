@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import './style.css'
 import { AnimatePresence } from 'framer-motion'
 import { MapContainer } from './components/Map/MapContainer'
@@ -17,11 +18,11 @@ import { AddSpotForm } from './components/Spots/AddSpotForm'
 import { LayerPanel } from './components/UI/LayerPanel'
 import { SettingsPanel } from './components/UI/SettingsPanel'
 import { Popup } from './components/Map/Popup'
-import { PasswordGate } from './components/Auth/PasswordGate'
 import { GooglePhotosButton, GooglePhotoMarkers, PhotoActionDialog } from './components/GooglePhotos'
-import { useUIStore, useSettingsStore } from './store'
+import { useAuthStore, useUIStore, useSettingsStore } from './store'
 
 function App() {
+  const initAuth = useAuthStore(state => state.initAuth)
   const spotFormOpen = useUIStore(state => state.spotFormOpen)
   const spotFormLocation = useUIStore(state => state.spotFormLocation)
   const closeSpotForm = useUIStore(state => state.closeSpotForm)
@@ -31,44 +32,47 @@ function App() {
   // Base size is 14px, scale it based on setting
   const baseFontSize = 14 * fontScale / 100
 
+  useEffect(() => {
+    const cleanup = initAuth()
+    return cleanup
+  }, [initAuth])
+
   return (
-    <PasswordGate>
-      <div className="h-screen w-screen overflow-hidden" style={{ fontSize: `${baseFontSize}px` }}>
-        <MapContainer />
-        <GpsMarker />
-        <CatchMarkers />
-        <GooglePhotoMarkers />
-        <SpotMarkers />
-        <Popup />
-        <LongPressMenu />
+    <div className="h-screen w-screen overflow-hidden" style={{ fontSize: `${baseFontSize}px` }}>
+      <MapContainer />
+      <GpsMarker />
+      <CatchMarkers />
+      <GooglePhotoMarkers />
+      <SpotMarkers />
+      <Popup />
+      <LongPressMenu />
 
-        {/* Top bar: Weather (left), Search & Menu (right) */}
-        <FishingWidget />
-        <SearchBox />
-        <HamburgerMenu />
+      {/* Top bar: Weather (left), Search & Menu (right) */}
+      <FishingWidget />
+      <SearchBox />
+      <HamburgerMenu />
 
-        {/* Bottom bar: Presets & Reset (left), Layers & Catch & GPS (right) */}
-        <PresetButtons />
-        <ResetButton />
-        <GooglePhotosButton />
-        <LayerPanel />
-        <AddCatchButton />
-        <GpsButton />
+      {/* Bottom bar: Presets & Reset (left), Layers & Catch & GPS (right) */}
+      <PresetButtons />
+      <ResetButton />
+      <GooglePhotosButton />
+      <LayerPanel />
+      <AddCatchButton />
+      <GpsButton />
 
-        {/* Modals */}
-        <InfoButton />
-        <SettingsPanel />
-        <PhotoActionDialog />
-        <AnimatePresence>
-          {spotFormOpen && (
-            <AddSpotForm
-              onClose={closeSpotForm}
-              initialLocation={spotFormLocation || undefined}
-            />
-          )}
-        </AnimatePresence>
-      </div>
-    </PasswordGate>
+      {/* Modals */}
+      <InfoButton />
+      <SettingsPanel />
+      <PhotoActionDialog />
+      <AnimatePresence>
+        {spotFormOpen && (
+          <AddSpotForm
+            onClose={closeSpotForm}
+            initialLocation={spotFormLocation || undefined}
+          />
+        )}
+      </AnimatePresence>
+    </div>
   )
 }
 
